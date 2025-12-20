@@ -1,8 +1,10 @@
-from fastapi import APIRouter, HTTPException, Response
+from fastapi import APIRouter, Depends, HTTPException, Request, Response
+from jose import JWTError, jwt
 
 from app.users.dao import UserDAO
+from app.users.dependencies import get_current_user
 from app.users.schemas import SUserAuth, SUserRead
-from app.security import ACCESS_TOKEN_EXPIRE, REFRESH_TOKEN_EXPIRE, create_access_token, create_refresh_token, hash_password, verify_password
+from app.security import ACCESS_TOKEN_EXPIRE, ALGORITHM, REFRESH_TOKEN_EXPIRE, SECRET_KEY, create_access_token, create_refresh_token, hash_password, verify_password
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
 
@@ -59,3 +61,51 @@ async def login(response: Response, data: SUserAuth):
     response.set_cookie(key="refresh", value=refresh_token, httponly=True, max_age=REFRESH_TOKEN_EXPIRE* 24 * 60 * 60)
 
     return user
+
+
+@router.get("/me", summary="Текущий пользователь", response_model=SUserRead, 
+            description="Возвращает данные пользователя по схеме SUserRead")
+async def get_me(user = Depends(get_current_user)):
+    return user
+
+
+@router.post("/logout", status_code=204, summary="Выход из учетной записи",  
+               description="Выход из учетной записи")
+async def logout(response: Response):
+    response.delete_cookie("access")
+    response.delete_cookie("refresh")
+
+
+@router.post("/refresh", status_code=204, summary="Refresh access token\'а", 
+             description="Создает новый access token по истечению старого")
+async def refresh_access_token(request: Request, response: Response):
+
+    refresh = request.cookies.get("refresh")
+
+    if not refresh:
+        raise HTTPException(status_code=401, detail="Refresh token истек")
+
+    try:
+        payload = jwt.decode(token=refresh, key=SECRET_KEY, algorithms=[ALGORITHM])
+    except JWTError:
+        raise HTTPException(status_code=401, detail="Невалидный refresh token") 
+
+    if payload.get("type") != "refresh":
+        raise HTTPException(status_code=401, detail="Невалидный refresh token")
+
+    user_id = payload.get("sub")
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Невалидный refresh token")
+
+    try: 
+        user_id = int(user_id)
+    except (ValueError, TypeError): 
+        raise HTTPException(status_code=401, detail="Невалидный refresh token")
+
+    user = await UserDAO.find_one_or_none(id=user_id)
+    if not user:
+        raise HTTPException(status_code=401)
+    
+    access = create_access_token({"sub": user_id})
+
+    response.set_cookie(key="access", value=access, max_age=ACCESS_TOKEN_EXPIRE*60, httponly=True)
