@@ -1,5 +1,5 @@
 from typing import Type
-from sqlalchemy import insert, select
+from sqlalchemy import insert, select, update
 from app.database import Base, new_session
 
 
@@ -61,3 +61,22 @@ class BaseDAO():
             res = await session.execute(query)
             await session.commit()
             return res.scalar_one()
+        
+
+    @classmethod
+    async def update(cls, filter_by: dict, **values):
+        """
+        Изменяет уже существующие данные в таблице на новые.
+
+        **Параметры:**
+            - `filter_by`: данные поиска.
+            - `values`: данные для замены.
+
+        **Результат:**
+            - `Измененный пользователь`
+        """
+        async with new_session() as session:
+            query = update(cls.model).filter_by(**filter_by).values(**values).returning(cls.model)
+            res = await session.execute(query)
+            await session.commit()
+            return res.scalar_one_or_none()
