@@ -5,12 +5,15 @@ class SUserAuth(BaseModel):
     email: EmailStr = Field(..., description="Электронная почта")
     password: str = Field(..., min_length=5, max_length=50, description="Пароль")
 
+
 class SUserConfirmEmail(BaseModel):
     email: EmailStr = Field(..., description="Электронная почта")
-    code: str = Field(..., min_length=6, max_length=6, description="6-ти значный код подтверждения")
+    code: str = Field(..., description="6-ти значный код подтверждения")
+
 
 class SResendVerifyCode(BaseModel):
     email: EmailStr
+
 
 class SUserRead(BaseModel):
     id: int

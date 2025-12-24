@@ -248,3 +248,5 @@ async def refresh_access_token(request: Request, response: Response):
     access = create_access_token({"sub": user_id})
 
     response.set_cookie(key="access", value=access, httponly=True, max_age=ACCESS_TOKEN_EXPIRE*60)
+
+    return {"access_token": access}

@@ -1,9 +1,10 @@
 from app.dao import BaseDAO
-from app.products.models import Product
+from app.products.models import Product, Product_Category
 
 
 class ProductsDAO(BaseDAO):
     model = Product
 
-    @classmethod
-    
+
+class CategoriesDAO(BaseDAO):
+    model = Product_Category

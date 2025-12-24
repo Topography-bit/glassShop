@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import async_engine_from_config
 from app.database import Base
 from app.database import DATABASE_URL
 from app.users.models import User
-
+from app.products.models import Product, Product_Category, FacetPrice, EdgeProcessingPrice, TemperingPrice
 
 from alembic import context
 
