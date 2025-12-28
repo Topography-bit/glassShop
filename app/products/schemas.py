@@ -1,4 +1,4 @@
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 from typing import Optional
 from decimal import Decimal
 
@@ -39,5 +39,24 @@ class ConfigSchema(BaseModel):
     facets: list[FacetSchema]
     temperings: list[TemperingSchema]
 
+
 class PriceResponse(BaseModel):
     price: Decimal
+
+
+class SEdgeOut(BaseModel):
+    id: int
+    edge_shape: str
+    edge_type: str
+    thickness_mm: int
+    price: Decimal
+    is_active: bool
+
+    model_config = ConfigDict(from_attributes=True)
+
+class SEdgeUpdate(BaseModel):
+    edge_shape: str
+    edge_type: str
+    thickness_mm: int = Field(gt=0)
+    price: Decimal = Field(ge=0)
+    is_active: bool

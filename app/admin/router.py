@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 
 from app.admin.dependencies import user_is_admin
-from app.admin.schemas import SEdgeOut
+from app.products.schemas import SEdgeOut, SEdgeUpdate
 from app.admin.service import parse_categories_of_products, parse_products_by_names
 from app.products.dao import CategoriesDAO, EdgesDAO, ProductsDAO
 
@@ -49,11 +49,47 @@ async def add_all_products(file: UploadFile = File(...)):
     return {"message": "Все товары успешно добавлены"}
 
 
-@router.get("/edges/{edge_id}", response_model=SEdgeOut)
-async def switch_edge_availability(edge_id: int):
+@router.post("/edges", summary="Создать новую обработку края",
+        description="Добавляет тип обработки края в базу. Используется в админ-панели.")
+async def add_edge(data: SEdgeUpdate):
+    
+    edge = await EdgesDAO.add_and_return(edge_shape=data.edge_shape, edge_type=data.edge_type, 
+                                        thickness_mm=data.thickness_mm, price=data.price,
+                                        is_active=data.is_active)
+    
+    return edge
+
+
+@router.get("/edges/{edge_id}", response_model=SEdgeOut, summary="Получить данные кромки",
+        description="Возвращает данные обработки края по id.")
+async def get_edge_data(edge_id: int):
     edge = await EdgesDAO.find_one_or_none(id=edge_id)
 
     if not edge:
-        raise HTTPException(404, "Edge not found")
+        raise HTTPException(status_code=404, detail="Обработка не найдена")
     
     return edge
+
+
+@router.put("/edges/{edge_id}", response_model=SEdgeOut, summary="Обновить обработку края",
+        description="Полное обновление данных обработки края. Заменяет все существующие поля.")
+async def update_edge(edge_id: int, data: SEdgeUpdate):
+    edge = await EdgesDAO.find_one_or_none(id=edge_id)
+    if not edge:
+        raise HTTPException(status_code=404, detail="Обработка не найдена")
+
+    updated = await EdgesDAO.update({"id": edge_id}, **data.model_dump())
+
+    return updated
+
+
+@router.delete("/edges/{edge_id}", status_code=204, summary="Удалить обработку края",
+        description="Удаляет обработку края по идентификатору.")
+async def delete_edge(edge_id: int):
+    edge = await EdgesDAO.find_one_or_none(id=edge_id)
+    if not edge:
+        raise HTTPException(status_code=404, detail="Обработка не найдена")
+    
+    await EdgesDAO.delete_by(id=edge_id)
+
+

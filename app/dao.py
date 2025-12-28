@@ -132,3 +132,10 @@ class BaseDAO():
             query = select(cls.model).filter_by(**filter_by)
             res = await session.execute(query)
             return res.scalars().all()
+        
+    @classmethod
+    async def delete_by(cls, **filter_by):
+        async with new_session() as session:
+            query = delete(cls.model).filter_by(**filter_by)
+            await session.execute(query)
+            await session.commit()
