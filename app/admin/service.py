@@ -1,3 +1,4 @@
+from decimal import Decimal
 from io import BytesIO
 from fastapi import HTTPException
 import openpyxl
@@ -36,8 +37,9 @@ def parse_products_by_names(file_bytes: bytes) -> list[dict]:
     ans = []
 
     for r in work_sheet.iter_rows(min_row=2, values_only=True):
-        name = r[name_idx] + f" {r[thickness_idx]} мм" if thickness_idx != -1 and r[thickness_idx] != None else r[name_idx]
-        price = r[price_idx]
+        thickness = r[thickness_idx] if thickness_idx != -1 else None
+        name = r[name_idx] + f" {r[thickness_idx]} мм" if thickness != None else r[name_idx]
+        price = Decimal(str(r[price_idx]))
         wl = r[width_idx] if width_idx != -1 else None
         category_name = r[category_idx]
         category_name = category_name.strip() if isinstance(category_name, str) else category_name
@@ -45,10 +47,12 @@ def parse_products_by_names(file_bytes: bytes) -> list[dict]:
 
         if "*" in wl:
             width, length = map(str.strip, wl.split("*", 1))
+            width = int(width)
+            length = int(length)
         else:
             width, length = None, None
 
-        ans.append({"name": name, "price_per_m2": price, "max_width": width, "max_length": length, "category_name": category_name})
+        ans.append({"name": name, "thickness_mm": thickness, "price_per_m2": price, "max_width": width, "max_length": length, "category_name": category_name})
 
     return ans
 

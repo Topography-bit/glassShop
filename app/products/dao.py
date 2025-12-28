@@ -1,5 +1,5 @@
 from app.dao import BaseDAO
-from app.products.models import Product, Product_Category
+from app.products.models import EdgeProcessingPrice, FacetPrice, Product, Product_Category, TemperingPrice
 
 
 class ProductsDAO(BaseDAO):
@@ -8,3 +8,15 @@ class ProductsDAO(BaseDAO):
 
 class CategoriesDAO(BaseDAO):
     model = Product_Category
+
+
+class EdgesDAO(BaseDAO):
+    model = EdgeProcessingPrice
+
+
+class TemperingDAO(BaseDAO):
+    model = TemperingPrice
+
+
+class FacetsDAO(BaseDAO):
+    model = FacetPrice

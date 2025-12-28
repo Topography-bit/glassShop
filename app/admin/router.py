@@ -1,8 +1,9 @@
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 
 from app.admin.dependencies import user_is_admin
+from app.admin.schemas import SEdgeOut
 from app.admin.service import parse_categories_of_products, parse_products_by_names
-from app.products.dao import CategoriesDAO, ProductsDAO
+from app.products.dao import CategoriesDAO, EdgesDAO, ProductsDAO
 
 router = APIRouter(prefix="/admin", tags=["Admin"], dependencies=[Depends(user_is_admin)])
 
@@ -46,3 +47,13 @@ async def add_all_products(file: UploadFile = File(...)):
         raise HTTPException(status_code=500, detail="Ошибка при добавлении")
 
     return {"message": "Все товары успешно добавлены"}
+
+
+@router.get("/edges/{edge_id}", response_model=SEdgeOut)
+async def switch_edge_availability(edge_id: int):
+    edge = await EdgesDAO.find_one_or_none(id=edge_id)
+
+    if not edge:
+        raise HTTPException(404, "Edge not found")
+    
+    return edge

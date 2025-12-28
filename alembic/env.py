@@ -9,6 +9,7 @@ from app.database import Base
 from app.database import DATABASE_URL
 from app.users.models import User
 from app.products.models import Product, Product_Category, FacetPrice, EdgeProcessingPrice, TemperingPrice
+from app.cart.models import Cart
 
 from alembic import context
 
