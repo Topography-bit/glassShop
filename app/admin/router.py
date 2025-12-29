@@ -1,9 +1,9 @@
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 
 from app.admin.dependencies import user_is_admin
-from app.products.schemas import SEdgeOut, SEdgeUpdate
+from app.products.schemas import SEdgeOut, SEdgeUpdate, SFacetOut, SFacetUpdate, STemperingOut, STemperingUpdate
 from app.admin.service import parse_categories_of_products, parse_products_by_names
-from app.products.dao import CategoriesDAO, EdgesDAO, ProductsDAO
+from app.products.dao import CategoriesDAO, EdgesDAO, FacetsDAO, ProductsDAO, TemperingDAO
 
 router = APIRouter(prefix="/admin", tags=["Admin"], dependencies=[Depends(user_is_admin)])
 
@@ -49,18 +49,16 @@ async def add_all_products(file: UploadFile = File(...)):
     return {"message": "Все товары успешно добавлены"}
 
 
-@router.post("/edges", summary="Создать новую обработку края",
+@router.post("/edges", summary="Создать новую обработку края", status_code=201,
         description="Добавляет тип обработки края в базу. Используется в админ-панели.")
 async def add_edge(data: SEdgeUpdate):
     
-    edge = await EdgesDAO.add_and_return(edge_shape=data.edge_shape, edge_type=data.edge_type, 
-                                        thickness_mm=data.thickness_mm, price=data.price,
-                                        is_active=data.is_active)
+    edge = await EdgesDAO.add_and_return(**data.model_dump())
     
     return edge
 
 
-@router.get("/edges/{edge_id}", response_model=SEdgeOut, summary="Получить данные кромки",
+@router.get("/edges/{edge_id}", response_model=SEdgeOut, summary="Получить данные обработки края",
         description="Возвращает данные обработки края по id.")
 async def get_edge_data(edge_id: int):
     edge = await EdgesDAO.find_one_or_none(id=edge_id)
@@ -84,7 +82,7 @@ async def update_edge(edge_id: int, data: SEdgeUpdate):
 
 
 @router.delete("/edges/{edge_id}", status_code=204, summary="Удалить обработку края",
-        description="Удаляет обработку края по идентификатору.")
+        description="Удаляет обработку края по id.")
 async def delete_edge(edge_id: int):
     edge = await EdgesDAO.find_one_or_none(id=edge_id)
     if not edge:
@@ -93,3 +91,83 @@ async def delete_edge(edge_id: int):
     await EdgesDAO.delete_by(id=edge_id)
 
 
+@router.post("/facets", summary="Создать новый фацет", status_code=201,
+        description="Добавляет фацет в базу. Используется в админ-панели.")
+async def add_facet(data: SFacetUpdate):
+    facet = await FacetsDAO.add_and_return(**data.model_dump())
+
+    return facet
+
+
+@router.get("/facets/{facet_id}", response_model=SFacetOut, summary="Получить данные фацета",
+        description="Возвращает данные фацета по id.")
+async def get_facet_data(facet_id: int):
+    facet = await FacetsDAO.find_one_or_none(id=facet_id)
+
+    if not facet:
+        raise HTTPException(status_code=404, detail="Фацет не найден")
+    
+    return facet
+
+
+@router.put("/facets/{facet_id}", response_model=SFacetOut, summary="Обновить фацет",
+        description="Полное обновление данных фацета. Заменяет все существующие поля.")
+async def update_facet(facet_id: int, data: SFacetUpdate):
+    facet = await FacetsDAO.find_one_or_none(id=facet_id)
+    if not facet:
+        raise HTTPException(status_code=404, detail="Фацет не найден")
+
+    updated = await FacetsDAO.update({"id": facet_id}, **data.model_dump())
+
+    return updated
+
+
+@router.delete("/facets/{facet_id}", status_code=204, summary="Удалить фацет",
+        description="Удаляет фацет по id.")
+async def delete_facet(facet_id: int):
+    facet = await FacetsDAO.find_one_or_none(id=facet_id)
+    if not facet:
+        raise HTTPException(status_code=404, detail="Фацет не найден")
+    
+    await FacetsDAO.delete_by(id=facet_id)
+
+
+@router.post("/temperings", summary="Создать новую закалку", status_code=201,
+        description="Добавляет закалку в базу. Используется в админ-панели.")
+async def add_tempering(data: STemperingUpdate):
+    tempering = await TemperingDAO.add_and_return(**data.model_dump())
+
+    return tempering
+
+
+@router.get("/temperings/{tempering_id}", response_model=STemperingOut, summary="Получить данные закалки",
+        description="Возвращает данные закалки по id.")
+async def get_tempering_data(tempering_id: int):
+    tempering = await TemperingDAO.find_one_or_none(id=tempering_id)
+
+    if not tempering:
+        raise HTTPException(status_code=404, detail="Закалка не найдена")
+    
+    return tempering
+
+
+@router.put("/temperings/{tempering_id}", response_model=STemperingOut, summary="Обновить закалку",
+        description="Полное обновление данных закалки. Заменяет все существующие поля.")
+async def update_tempering(tempering_id: int, data: STemperingUpdate):
+    tempering = await TemperingDAO.find_one_or_none(id=tempering_id)
+    if not tempering:
+        raise HTTPException(status_code=404, detail="Закалка не найдена")
+
+    updated = await TemperingDAO.update({"id": tempering_id}, **data.model_dump())
+
+    return updated
+
+
+@router.delete("/temperings/{tempering_id}", status_code=204, summary="Удалить закалку",
+        description="Удаляет закалку по id.")
+async def delete_tempering(tempering_id: int):
+    tempering = await TemperingDAO.find_one_or_none(id=tempering_id)
+    if not tempering:
+        raise HTTPException(status_code=404, detail="Закалка не найдена")
+    
+    await TemperingDAO.delete_by(id=tempering_id)

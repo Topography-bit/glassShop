@@ -12,7 +12,7 @@ from app.users.dependencies import get_current_user
 router = APIRouter(prefix="/cart", tags=["Cart"], dependencies=[Depends(get_current_user)])
 
 
-@router.post("/cart", summary="Корзина пользователя", response_model=SCartResponse,
+@router.post("/cart", summary="Корзина пользователя", response_model=SCartResponse, status_code=201,
         description=(
         "Добавляет товар в корзину пользователя.\n\n"
         "Если в корзине уже есть позиция с тем же товаром, размерами и опциями "

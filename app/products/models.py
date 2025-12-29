@@ -41,6 +41,7 @@ class EdgeProcessingPrice(Base):
     price: Mapped[int] = mapped_column(Numeric(10, 2), nullable=False)
     is_active: Mapped[bool] = mapped_column(nullable=True, default=True)
 
+
 class FacetPrice(Base):
     __tablename__ = "facet_prices"
 
@@ -49,6 +50,7 @@ class FacetPrice(Base):
     facet_width_mm: Mapped[int] = mapped_column(nullable=False)
     price: Mapped[int] = mapped_column(Numeric(10, 2), nullable=False)
     is_active: Mapped[bool] = mapped_column(nullable=True, default=True)
+
 
 class TemperingPrice(Base):
     __tablename__ = "tempering_prices"

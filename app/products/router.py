@@ -26,8 +26,9 @@ async def get_products_by_category(category_id: int):
     return await ProductsDAO.get_all_by(category_id=category_id)
 
 
-@router.get("/products/{product_id}/config", response_model=ConfigSchema, 
-            summary="Конфигуратор, открывающийся когда пользователь нажимает на товар",)
+@router.get("/products/{product_id}/config", response_model=ConfigSchema, summary="Данные для конфигуратора товара",
+        description=("Возвращает инфу о товаре и список подходящих услуг"
+                "на основе толщины стекла, а также доступности."))
 async def product_configurator(product_id: int):
     product = await ProductsDAO.find_one_or_none(id=product_id)
     if not product:
