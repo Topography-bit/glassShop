@@ -1,0 +1,326 @@
+<div class="page admin-page">
+  <section class="admin-page__hero glass-card">
+    <p class="admin-page__eyebrow">Админ-панель</p>
+    <h1>Управление прайсами и импортом каталога.</h1>
+    <p>
+      Страница работает поверх текущих `admin/*` эндпоинтов: можно загрузить Excel, держать в порядке кромки,
+      фацеты и закалку без похода в Swagger.
+    </p>
+  </section>
+
+  @if (error) {
+    <div class="status-banner status-banner_error">{{ error }}</div>
+  }
+
+  @if (success) {
+    <div class="status-banner status-banner_success">{{ success }}</div>
+  }
+
+  <div class="admin-page__tabs">
+    <button type="button" [class.is-active]="selectedTab === 'import'" (click)="setTab('import')">Импорт</button>
+    <button type="button" [class.is-active]="selectedTab === 'edges'" (click)="setTab('edges')">Кромка</button>
+    <button type="button" [class.is-active]="selectedTab === 'facets'" (click)="setTab('facets')">Фацет</button>
+    <button type="button" [class.is-active]="selectedTab === 'temperings'" (click)="setTab('temperings')">Закалка</button>
+  </div>
+
+  @if (selectedTab === 'import') {
+    <section class="admin-card admin-card_import glass-card">
+      <div class="admin-import__intro">
+        <div>
+          <h2>Загрузка каталога из Excel</h2>
+          <p>
+            Поддерживается только `.xlsx`. Импорт обновляет найденные товары, создает новые категории по колонке
+            `Категория`, а позиции, которых в файле больше нет, делает неактивными.
+          </p>
+        </div>
+        <span class="admin-import__badge">.xlsx only</span>
+      </div>
+
+      <div class="admin-import">
+        <div class="admin-upload-panel">
+          <input
+            #catalogUpload
+            id="catalog-upload"
+            class="admin-upload__input"
+            type="file"
+            accept=".xlsx"
+            (change)="onFileChange($event)"
+          />
+
+          <label class="admin-upload__picker" for="catalog-upload">
+            <span class="admin-upload__tag">Excel</span>
+            <strong>{{ uploadFile ? 'Файл выбран' : 'Выбери файл каталога' }}</strong>
+            <span class="admin-upload__filename">
+              {{ uploadFile ? uploadFile.name : 'Нажми сюда и выбери .xlsx с товарами' }}
+            </span>
+            <span class="admin-upload__meta">
+              @if (uploadFile) {
+                {{ formatUploadFileSize(uploadFile.size) }} · файл готов к импорту
+              } @else {
+                Первая строка Excel должна содержать названия колонок.
+              }
+            </span>
+          </label>
+
+          <div class="admin-upload__actions">
+            <button
+              class="solid-button"
+              type="button"
+              [disabled]="!uploadFile || loading"
+              (click)="uploadProducts(catalogUpload)"
+            >
+              {{ loading ? 'Загружаю...' : 'Загрузить файл' }}
+            </button>
+            <button
+              class="ghost-button"
+              type="button"
+              [disabled]="!uploadFile || loading"
+              (click)="clearUploadFile(catalogUpload)"
+            >
+              Очистить
+            </button>
+          </div>
+        </div>
+
+        <div class="admin-import-guide">
+          <article class="admin-spec-card admin-spec-card_required">
+            <p class="admin-spec-card__eyebrow">Обязательные колонки</p>
+            <div class="admin-spec-list">
+              <div class="admin-spec-list__item">
+                <strong>Название</strong>
+                <span>Базовое имя товара. Если заполнена `Толщина`, система сама добавит к имени `4 мм`.</span>
+              </div>
+              <div class="admin-spec-list__item">
+                <strong>Цена</strong>
+                <span>Число без валютного текста. Пример: `14500` или `14500.50`.</span>
+              </div>
+              <div class="admin-spec-list__item">
+                <strong>Категория</strong>
+                <span>Название раздела витрины. Именно сюда товар попадет после импорта.</span>
+              </div>
+            </div>
+          </article>
+
+          <article class="admin-spec-card">
+            <p class="admin-spec-card__eyebrow">Необязательные колонки</p>
+            <div class="admin-spec-list">
+              <div class="admin-spec-list__item">
+                <strong>Толщина</strong>
+                <span>Число в мм. Пример: `4`. На витрине получится имя вроде `Сатин светлый 4 мм`.</span>
+              </div>
+              <div class="admin-spec-list__item">
+                <strong>Формат</strong>
+                <span>Максимальный размер строго в формате `ширина*длина`, например `3210*2250`.</span>
+              </div>
+              <div class="admin-spec-list__item">
+                <strong>Фото / Image / Photo</strong>
+                <span>Можно дать URL или hyperlink из Excel. Если колонки нет, товар просто останется без фото.</span>
+              </div>
+            </div>
+          </article>
+
+          <article class="admin-spec-card admin-spec-card_example">
+            <p class="admin-spec-card__eyebrow">Пример заполнения</p>
+
+            <div class="admin-example">
+              <div class="admin-example__table">
+                <div class="admin-example__cell admin-example__cell_head">Название</div>
+                <div class="admin-example__cell admin-example__cell_head">Цена</div>
+                <div class="admin-example__cell admin-example__cell_head">Категория</div>
+                <div class="admin-example__cell admin-example__cell_head">Толщина</div>
+                <div class="admin-example__cell admin-example__cell_head">Формат</div>
+                <div class="admin-example__cell admin-example__cell_head">Фото</div>
+
+                <div class="admin-example__cell">Сатин светлый</div>
+                <div class="admin-example__cell">14500</div>
+                <div class="admin-example__cell">Стекло "Сатин"</div>
+                <div class="admin-example__cell">4</div>
+                <div class="admin-example__cell">3210*2250</div>
+                <div class="admin-example__cell">https://site.ru/satin-light-4.jpg</div>
+              </div>
+            </div>
+
+            <p class="admin-spec-card__note">
+              В этом примере на витрине появится товар `Сатин светлый 4 мм` в категории `Стекло "Сатин"` с диапазоном
+              до `3210 × 2250 мм`.
+            </p>
+          </article>
+        </div>
+      </div>
+    </section>
+  }
+
+  @if (selectedTab === 'edges') {
+    <section class="admin-grid">
+      <article class="admin-card glass-card">
+        <h2>{{ selectedEdgeId ? 'Редактировать кромку' : 'Новая кромка' }}</h2>
+
+        <div class="admin-form">
+          <label class="field-label">
+            Форма
+            <select class="select-field" [(ngModel)]="edgeForm.edge_shape">
+              <option value="straight">Прямая</option>
+              <option value="curved">Криволинейная</option>
+            </select>
+          </label>
+
+          <label class="field-label">
+            Тип
+            <select class="select-field" [(ngModel)]="edgeForm.edge_type">
+              <option value="transparent">Полировка</option>
+              <option value="matte">Матовая</option>
+            </select>
+          </label>
+
+          <label class="field-label">
+            Толщина, мм
+            <input class="field" type="number" [(ngModel)]="edgeForm.thickness_mm" />
+          </label>
+
+          <label class="field-label">
+            Цена
+            <input class="field" type="number" [(ngModel)]="edgeForm.price" />
+          </label>
+
+          <label class="admin-switch">
+            <input type="checkbox" [(ngModel)]="edgeForm.is_active" />
+            <span>Активна</span>
+          </label>
+
+          <div class="admin-actions">
+            <button class="solid-button" type="button" [disabled]="loading" (click)="saveEdge()">
+              {{ selectedEdgeId ? 'Сохранить' : 'Добавить' }}
+            </button>
+            <button class="ghost-button" type="button" (click)="resetEdgeForm()">Сбросить</button>
+          </div>
+        </div>
+      </article>
+
+      <article class="admin-card glass-card">
+        <h2>Текущие кромки</h2>
+        <div class="admin-list">
+          @for (edge of edges; track edge.id) {
+            <article class="admin-list__item">
+              <div>
+                <strong>{{ edge.edge_shape === 'curved' ? 'Криволинейная' : 'Прямая' }} {{ edge.edge_type === 'transparent' ? 'полировка' : 'матовая' }}</strong>
+                <p>{{ edge.thickness_mm }} мм · {{ formatPrice(edge.price) }}</p>
+              </div>
+              <div class="admin-list__actions">
+                <button class="ghost-button" type="button" (click)="editEdge(edge)">Изменить</button>
+                <button class="ghost-button" type="button" (click)="deleteEdge(edge.id)">Удалить</button>
+              </div>
+            </article>
+          }
+        </div>
+      </article>
+    </section>
+  }
+
+  @if (selectedTab === 'facets') {
+    <section class="admin-grid">
+      <article class="admin-card glass-card">
+        <h2>{{ selectedFacetId ? 'Редактировать фацет' : 'Новый фацет' }}</h2>
+
+        <div class="admin-form">
+          <label class="field-label">
+            Форма
+            <select class="select-field" [(ngModel)]="facetForm.shape">
+              <option value="straight">Прямой</option>
+              <option value="curved">Криволинейный</option>
+            </select>
+          </label>
+
+          <label class="field-label">
+            Ширина фацета, мм
+            <input class="field" type="number" [(ngModel)]="facetForm.facet_width_mm" />
+          </label>
+
+          <label class="field-label">
+            Цена
+            <input class="field" type="number" [(ngModel)]="facetForm.price" />
+          </label>
+
+          <label class="admin-switch">
+            <input type="checkbox" [(ngModel)]="facetForm.is_active" />
+            <span>Активен</span>
+          </label>
+
+          <div class="admin-actions">
+            <button class="solid-button" type="button" [disabled]="loading" (click)="saveFacet()">
+              {{ selectedFacetId ? 'Сохранить' : 'Добавить' }}
+            </button>
+            <button class="ghost-button" type="button" (click)="resetFacetForm()">Сбросить</button>
+          </div>
+        </div>
+      </article>
+
+      <article class="admin-card glass-card">
+        <h2>Текущие фацеты</h2>
+        <div class="admin-list">
+          @for (facet of facets; track facet.id) {
+            <article class="admin-list__item">
+              <div>
+                <strong>{{ facet.shape === 'curved' ? 'Криволинейный' : 'Прямой' }} фацет</strong>
+                <p>{{ facet.facet_width_mm }} мм · {{ formatPrice(facet.price) }}</p>
+              </div>
+              <div class="admin-list__actions">
+                <button class="ghost-button" type="button" (click)="editFacet(facet)">Изменить</button>
+                <button class="ghost-button" type="button" (click)="deleteFacet(facet.id)">Удалить</button>
+              </div>
+            </article>
+          }
+        </div>
+      </article>
+    </section>
+  }
+
+  @if (selectedTab === 'temperings') {
+    <section class="admin-grid">
+      <article class="admin-card glass-card">
+        <h2>{{ selectedTemperingId ? 'Редактировать закалку' : 'Новая закалка' }}</h2>
+
+        <div class="admin-form">
+          <label class="field-label">
+            Толщина, мм
+            <input class="field" type="number" [(ngModel)]="temperingForm.thickness_mm" />
+          </label>
+
+          <label class="field-label">
+            Цена
+            <input class="field" type="number" [(ngModel)]="temperingForm.price" />
+          </label>
+
+          <label class="admin-switch">
+            <input type="checkbox" [(ngModel)]="temperingForm.is_active" />
+            <span>Активна</span>
+          </label>
+
+          <div class="admin-actions">
+            <button class="solid-button" type="button" [disabled]="loading" (click)="saveTempering()">
+              {{ selectedTemperingId ? 'Сохранить' : 'Добавить' }}
+            </button>
+            <button class="ghost-button" type="button" (click)="resetTemperingForm()">Сбросить</button>
+          </div>
+        </div>
+      </article>
+
+      <article class="admin-card glass-card">
+        <h2>Текущие закалки</h2>
+        <div class="admin-list">
+          @for (tempering of temperings; track tempering.id) {
+            <article class="admin-list__item">
+              <div>
+                <strong>Закалка {{ tempering.thickness_mm }} мм</strong>
+                <p>{{ formatPrice(tempering.price) }}</p>
+              </div>
+              <div class="admin-list__actions">
+                <button class="ghost-button" type="button" (click)="editTempering(tempering)">Изменить</button>
+                <button class="ghost-button" type="button" (click)="deleteTempering(tempering.id)">Удалить</button>
+              </div>
+            </article>
+          }
+        </div>
+      </article>
+    </section>
+  }
+</div>

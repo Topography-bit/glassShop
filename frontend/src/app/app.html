@@ -1,0 +1,46 @@
+<div class="shell">
+  <header class="shell__header">
+    <a class="brand" routerLink="/" (click)="closeMenu()">
+      <span class="brand__name">Glass Partnership Group</span>
+      <span class="brand__tag">Точный раскрой стекла и зеркал под проект</span>
+    </a>
+
+    <button
+      class="shell__menu"
+      type="button"
+      (click)="toggleMenu()"
+      [attr.aria-expanded]="isMenuOpen()"
+      aria-label="Открыть меню"
+    >
+      <span></span>
+      <span></span>
+    </button>
+
+    <nav class="shell__nav" [class.shell__nav_open]="isMenuOpen()">
+      <a routerLink="/catalog" routerLinkActive="is-active" (click)="closeMenu()">Каталог</a>
+      <a routerLink="/" fragment="contacts" routerLinkActive="is-active" (click)="closeMenu()">Контакты</a>
+      <a routerLink="/basket" routerLinkActive="is-active" (click)="closeMenu()">
+        Корзина
+        @if (cartCount()) {
+          <span class="shell__counter">{{ cartCount() }}</span>
+        }
+      </a>
+
+      @if (user(); as currentUser) {
+        <a routerLink="/account" routerLinkActive="is-active" (click)="closeMenu()">Кабинет</a>
+        @if (currentUser.is_admin) {
+          <a routerLink="/control" routerLinkActive="is-active" (click)="closeMenu()">Админка</a>
+        }
+        <span class="shell__user">{{ currentUser.email }}</span>
+        <button class="shell__action shell__action_muted" type="button" (click)="logout()">Выйти</button>
+      } @else {
+        <a class="shell__action shell__action_muted" routerLink="/login" (click)="closeMenu()">Войти</a>
+        <a class="shell__action" routerLink="/register" (click)="closeMenu()">Регистрация</a>
+      }
+    </nav>
+  </header>
+
+  <main class="shell__content">
+    <router-outlet />
+  </main>
+</div>

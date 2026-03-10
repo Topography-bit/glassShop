@@ -1,0 +1,53 @@
+<div class="auth-page">
+  <div class="auth-layout">
+    <section class="auth-panel glass-card">
+      <span class="auth-panel__eyebrow">Вход в кабинет</span>
+      <h1 class="auth-panel__title">Вернись к текущим заказам за пару секунд.</h1>
+      <p class="auth-panel__text">
+        После входа подхватим твою корзину, сохраним выбранные позиции и снова откроем каталог в
+        том состоянии, где ты остановился.
+      </p>
+
+      <ul class="auth-panel__list">
+        <li>Онлайн-калькулятор остается привязанным к твоему аккаунту.</li>
+        <li>Корзина сохраняется даже после обновления страницы.</li>
+        <li>Подтвержденный email нужен только один раз.</li>
+      </ul>
+    </section>
+
+    <section class="auth-card glass-card">
+      <h2 class="auth-card__heading">Войти</h2>
+      <p class="auth-card__subheading">
+        Используй тот же email, на который приходил код подтверждения.
+      </p>
+
+      @if (error) {
+        <div class="status-banner status-banner_error">{{ error }}</div>
+      }
+
+      <form class="auth-card__form" (ngSubmit)="submit()">
+        <label class="field-label">
+          Email
+          <input class="field" type="email" name="email" [(ngModel)]="email" required />
+        </label>
+
+        <label class="field-label">
+          Пароль
+          <input class="field" type="password" name="password" [(ngModel)]="password" required />
+        </label>
+
+        <div class="auth-card__actions">
+          <button class="solid-button" type="submit" [disabled]="loading">
+            {{ loading ? 'Вхожу...' : 'Войти в аккаунт' }}
+          </button>
+        </div>
+      </form>
+
+      <div class="auth-card__footer">
+        Нет аккаунта? <a routerLink="/register">Зарегистрироваться</a><br />
+        Если письмо с кодом уже на почте, можно сразу перейти к
+        <a routerLink="/verify">подтверждению</a>.
+      </div>
+    </section>
+  </div>
+</div>

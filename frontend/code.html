@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Подтверждение почты</title>
+    <link href="auth.css" rel="stylesheet" />
+</head>
+<body>
+    <div class="card">
+    <h2 class="card_title">Подтверждение email</h2>
+    <p class="card__subtitle">Введите код, отправленный на вашу почту</p>
+    <form>
+        <div class="code_inputs">
+            <input class="code_input" type="text" maxlength="1" inputmode="numeric" autocomplete="one-time-code" required />
+            <input class="code_input" type="text" maxlength="1" inputmode="numeric" required />
+            <input class="code_input" type="text" maxlength="1" inputmode="numeric" required />
+            <input class="code_input" type="text" maxlength="1" inputmode="numeric" required />
+            <input class="code_input" type="text" maxlength="1" inputmode="numeric" required />
+            <input class="code_input" type="text" maxlength="1" inputmode="numeric" required />
+        </div>
+    <button type="submit" class="button">Подтвердить</button>
+    </form>
+    
+    <div class="registrated">
+    <p>Не пришел код?
+    <a href="#">Отправить ещё раз</a></p>
+    </div>
+    <p class="registrated">Проверьте папку "Спам"</p>
+    </div>
+</body>
+</html>

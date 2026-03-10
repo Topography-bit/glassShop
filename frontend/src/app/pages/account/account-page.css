@@ -1,0 +1,123 @@
+.account-page {
+  display: grid;
+  gap: 1rem;
+  padding: 1.35rem 0 2rem;
+}
+
+.account-page__hero,
+.account-card {
+  padding: 1.4rem;
+}
+
+.account-page__eyebrow {
+  margin: 0;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--text-faint);
+}
+
+.account-page__hero h1,
+.account-card h2 {
+  margin: 0.35rem 0 0;
+  font-family: 'Palatino Linotype', 'Book Antiqua', serif;
+}
+
+.account-page__hero p:not(.account-page__eyebrow),
+.account-page__empty,
+.account-page__item p {
+  color: var(--text-soft);
+  line-height: 1.7;
+}
+
+.account-page__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.account-card__facts {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.9rem;
+  margin-top: 1rem;
+}
+
+.account-card__facts div,
+.account-page__item {
+  padding: 1rem;
+  border-radius: 1.25rem;
+  background: rgba(255, 255, 255, 0.76);
+  border: 1px solid rgba(93, 118, 139, 0.12);
+}
+
+.account-card__facts span,
+.account-page__summary span {
+  display: block;
+  color: var(--text-faint);
+  margin-bottom: 0.25rem;
+}
+
+.account-card__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.8rem;
+  margin-top: 1rem;
+}
+
+.account-page__header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: center;
+}
+
+.account-page__summary {
+  text-align: right;
+}
+
+.account-page__summary strong {
+  font-size: 1.2rem;
+}
+
+.account-page__preview {
+  display: grid;
+  gap: 0.8rem;
+  margin-top: 1rem;
+}
+
+.account-page__item {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: center;
+}
+
+.account-page__item h3 {
+  margin: 0;
+}
+
+.account-page__item p {
+  margin: 0.3rem 0 0;
+}
+
+.account-page__more {
+  margin-top: 1rem;
+}
+
+@media (max-width: 860px) {
+  .account-page__grid,
+  .account-card__facts {
+    grid-template-columns: 1fr;
+  }
+
+  .account-page__header,
+  .account-page__item {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .account-page__summary {
+    text-align: left;
+  }
+}

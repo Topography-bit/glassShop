@@ -1,0 +1,337 @@
+.admin-page {
+  display: grid;
+  gap: 1rem;
+  padding: 1.35rem 0 2rem;
+}
+
+.admin-page__hero,
+.admin-card {
+  padding: 1.4rem;
+}
+
+.admin-page__eyebrow {
+  margin: 0;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--text-faint);
+}
+
+.admin-page__hero h1,
+.admin-card h2 {
+  margin: 0.35rem 0 0;
+  font-family: 'Palatino Linotype', 'Book Antiqua', serif;
+}
+
+.admin-page__hero p:not(.admin-page__eyebrow) {
+  max-width: 42rem;
+  color: var(--text-soft);
+  line-height: 1.7;
+}
+
+.admin-card_import {
+  display: grid;
+  gap: 1.25rem;
+}
+
+.admin-page__tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.7rem;
+}
+
+.admin-page__tabs button {
+  border: 1px solid rgba(93, 118, 139, 0.16);
+  border-radius: 999px;
+  padding: 0.85rem 1.15rem;
+  background: rgba(255, 255, 255, 0.78);
+  cursor: pointer;
+}
+
+.admin-page__tabs button.is-active {
+  color: white;
+  background: linear-gradient(135deg, #5f84a7, #34536d);
+}
+
+.admin-import__intro {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.admin-import__intro p {
+  margin: 0.45rem 0 0;
+  max-width: 48rem;
+  color: var(--text-soft);
+  line-height: 1.7;
+}
+
+.admin-import__badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.1rem;
+  padding: 0 0.9rem;
+  border-radius: 999px;
+  background: linear-gradient(135deg, rgba(95, 132, 167, 0.14), rgba(52, 83, 109, 0.18));
+  color: #34536d;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.admin-import {
+  display: grid;
+  grid-template-columns: minmax(0, 0.92fr) minmax(0, 1.08fr);
+  gap: 1rem;
+}
+
+.admin-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+  gap: 1rem;
+}
+
+.admin-form,
+.admin-list,
+.admin-upload {
+  display: grid;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.admin-upload-panel {
+  display: grid;
+  gap: 1rem;
+  align-content: start;
+  padding: 1.15rem;
+  border-radius: 1.5rem;
+  background:
+    radial-gradient(circle at top left, rgba(95, 132, 167, 0.12), transparent 32%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.9), rgba(246, 248, 251, 0.84));
+  border: 1px solid rgba(93, 118, 139, 0.12);
+}
+
+.admin-upload__input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.admin-upload__picker {
+  display: grid;
+  gap: 0.55rem;
+  padding: 1.25rem;
+  border: 1px dashed rgba(93, 118, 139, 0.3);
+  border-radius: 1.35rem;
+  background: rgba(255, 255, 255, 0.82);
+  cursor: pointer;
+  transition:
+    border-color 180ms ease,
+    transform 180ms ease,
+    box-shadow 180ms ease,
+    background-color 180ms ease;
+}
+
+.admin-upload__picker:hover {
+  transform: translateY(-2px);
+  border-color: rgba(95, 132, 167, 0.42);
+  box-shadow: 0 18px 32px rgba(16, 26, 38, 0.07);
+}
+
+.admin-upload__tag {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: fit-content;
+  min-height: 1.9rem;
+  padding: 0 0.75rem;
+  border-radius: 999px;
+  background: rgba(52, 83, 109, 0.08);
+  color: #34536d;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.admin-upload__picker strong {
+  font-size: 1.2rem;
+  line-height: 1.1;
+}
+
+.admin-upload__filename {
+  color: #111923;
+  line-height: 1.55;
+}
+
+.admin-upload__meta {
+  color: var(--text-soft);
+  line-height: 1.6;
+}
+
+.admin-upload__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.8rem;
+}
+
+.admin-import-guide {
+  display: grid;
+  gap: 1rem;
+}
+
+.admin-spec-card {
+  display: grid;
+  gap: 0.9rem;
+  padding: 1.15rem;
+  border-radius: 1.5rem;
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(93, 118, 139, 0.12);
+}
+
+.admin-spec-card_required {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.86), rgba(244, 248, 252, 0.92)),
+    rgba(255, 255, 255, 0.72);
+}
+
+.admin-spec-card_example {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.9), rgba(248, 244, 238, 0.92)),
+    rgba(255, 255, 255, 0.72);
+}
+
+.admin-spec-card__eyebrow {
+  margin: 0;
+  color: var(--text-faint);
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.admin-spec-card__note {
+  margin: 0;
+  color: var(--text-soft);
+  line-height: 1.65;
+}
+
+.admin-spec-list {
+  display: grid;
+  gap: 0.8rem;
+}
+
+.admin-spec-list__item {
+  display: grid;
+  gap: 0.25rem;
+  padding-bottom: 0.8rem;
+  border-bottom: 1px solid rgba(93, 118, 139, 0.12);
+}
+
+.admin-spec-list__item:last-child {
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+.admin-spec-list__item strong {
+  font-size: 0.98rem;
+}
+
+.admin-spec-list__item span {
+  color: var(--text-soft);
+  line-height: 1.6;
+}
+
+.admin-example {
+  overflow-x: auto;
+}
+
+.admin-example__table {
+  display: grid;
+  grid-template-columns: 1.1fr 0.72fr 1fr 0.62fr 0.8fr 1.25fr;
+  min-width: 780px;
+  border-radius: 1.15rem;
+  overflow: hidden;
+  border: 1px solid rgba(93, 118, 139, 0.14);
+}
+
+.admin-example__cell {
+  padding: 0.9rem 0.95rem;
+  background: rgba(255, 255, 255, 0.78);
+  border-right: 1px solid rgba(93, 118, 139, 0.1);
+  border-bottom: 1px solid rgba(93, 118, 139, 0.1);
+  line-height: 1.45;
+}
+
+.admin-example__cell:nth-child(6n) {
+  border-right: none;
+}
+
+.admin-example__cell:nth-last-child(-n + 6) {
+  border-bottom: none;
+}
+
+.admin-example__cell_head {
+  background: linear-gradient(180deg, rgba(95, 132, 167, 0.12), rgba(255, 255, 255, 0.9));
+  font-weight: 700;
+}
+
+.admin-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  color: var(--text-soft);
+}
+
+.admin-actions,
+.admin-list__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.8rem;
+}
+
+.admin-list__item {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem;
+  border-radius: 1.25rem;
+  background: rgba(255, 255, 255, 0.76);
+  border: 1px solid rgba(93, 118, 139, 0.12);
+}
+
+.admin-list__item p {
+  margin: 0.3rem 0 0;
+  color: var(--text-soft);
+}
+
+@media (max-width: 980px) {
+  .admin-import,
+  .admin-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-import__intro {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
+@media (max-width: 760px) {
+  .admin-list__item {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .admin-upload__actions,
+  .admin-actions,
+  .admin-list__actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}

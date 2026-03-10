@@ -19,6 +19,7 @@ class Product(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(nullable=False)
+    image_url: Mapped[str | None] = mapped_column(nullable=True)
     price_per_m2: Mapped[Decimal] = mapped_column(Numeric(10, 2), nullable=False)
     thickness_mm: Mapped[int | None] = mapped_column(nullable=True)
     max_width: Mapped[int] = mapped_column(nullable=True)

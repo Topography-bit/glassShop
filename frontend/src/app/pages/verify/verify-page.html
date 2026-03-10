@@ -1,0 +1,67 @@
+<div class="auth-page">
+  <div class="auth-layout">
+    <section class="auth-panel glass-card">
+      <span class="auth-panel__eyebrow">Подтверждение почты</span>
+      <h1 class="auth-panel__title">Остался один короткий шаг.</h1>
+      <p class="auth-panel__text">
+        Введи код из письма. После подтверждения сразу авторизуем тебя и вернем в витрину.
+      </p>
+
+      <ul class="auth-panel__list">
+        <li>Код живет 10 минут.</li>
+        <li>Если письмо не пришло, можно отправить его еще раз.</li>
+        <li>Папку со спамом тоже лучше проверить.</li>
+      </ul>
+    </section>
+
+    <section class="auth-card glass-card">
+      <h2 class="auth-card__heading">Подтвердить email</h2>
+      <p class="auth-card__subheading">
+        Мы отправили письмо на указанную почту. Введи код целиком.
+      </p>
+
+      @if (error) {
+        <div class="status-banner status-banner_error">{{ error }}</div>
+      }
+
+      @if (success) {
+        <div class="status-banner status-banner_success">{{ success }}</div>
+      }
+
+      <form class="auth-card__form" (ngSubmit)="submit()">
+        <label class="field-label">
+          Email
+          <input class="field" type="email" name="email" [(ngModel)]="email" required />
+        </label>
+
+        <div class="verify__code" (paste)="onPaste($event)">
+          @for (digit of digits; track $index) {
+            <input
+              #digitInput
+              class="verify__digit"
+              type="text"
+              inputmode="numeric"
+              maxlength="1"
+              [value]="digit"
+              (input)="onDigitInput($index, $any($event.target).value)"
+              (keydown)="onDigitKeydown($event, $index)"
+            />
+          }
+        </div>
+
+        <div class="auth-card__actions">
+          <button class="solid-button" type="submit" [disabled]="loading">
+            {{ loading ? 'Подтверждаю...' : 'Подтвердить' }}
+          </button>
+          <button class="ghost-button" type="button" (click)="resend()" [disabled]="resendLoading">
+            {{ resendLoading ? 'Отправляю...' : 'Выслать код еще раз' }}
+          </button>
+        </div>
+      </form>
+
+      <div class="auth-card__footer">
+        Хочешь вернуться? <a routerLink="/login">Войти</a> или <a routerLink="/register">создать новый аккаунт</a>
+      </div>
+    </section>
+  </div>
+</div>

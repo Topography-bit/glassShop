@@ -1,99 +1,129 @@
 from decimal import Decimal
 from io import BytesIO
-from fastapi import HTTPException
+
 import openpyxl
+from fastapi import HTTPException
 
 
 def parse_products_by_names(file_bytes: bytes) -> list[dict]:
-    """Считывает продукты и возвращает в удобном формате для массовой вставки.
+    """Read products from an xlsx file for bulk upsert."""
+    workbook = openpyxl.load_workbook(BytesIO(file_bytes), data_only=True)
+    worksheet = workbook.active
 
-    **Параметры**:
-        - file_bytes - байты файла
+    name_idx, price_idx, format_idx, category_idx, thickness_idx, image_idx = -1, -1, -1, -1, -1, -1
 
-    **Возвращает**:
-        - Список из словарей со всеми необходимыми значениями для удобной вставки товаров.
-    """
-    wb = openpyxl.load_workbook(BytesIO(file_bytes), data_only=True)
-    work_sheet = wb.active
-    
-    name_idx, price_idx, width_idx, category_idx, thickness_idx = -1, -1, -1, -1, -1
+    for idx, cell in enumerate(worksheet[1]):
+        value = cell.value
+        value = value.strip().lower() if isinstance(value, str) else ""
 
-    for idx, cell in enumerate(work_sheet[1]):
-        val = cell.value
-        val = val.strip().lower() if isinstance(val, str) else ""
-        if val.startswith("назв"):
+        if value.startswith("назв"):
             name_idx = idx
-        elif val.startswith("цена"):
+        elif value.startswith("цена"):
             price_idx = idx
-        elif val.startswith("формат"):
-            width_idx = idx
-        elif val.startswith("катег"):
+        elif value.startswith("формат"):
+            format_idx = idx
+        elif value.startswith("катег"):
             category_idx = idx
-        elif val.startswith("толщина"):
-            thickness_idx = idx   
+        elif value.startswith("толщина"):
+            thickness_idx = idx
+        elif (
+            "фото" in value
+            or "изображ" in value
+            or "картин" in value
+            or "image" in value
+            or "photo" in value
+            or value == "img"
+        ):
+            image_idx = idx
+
     if name_idx == -1 or price_idx == -1 or category_idx == -1:
         raise HTTPException(status_code=400, detail="Нет одной из необходимых колонок")
 
-    ans = []
+    products: list[dict] = []
 
-    for r in work_sheet.iter_rows(min_row=2, values_only=True):
-        thickness = r[thickness_idx] if thickness_idx != -1 else None
-        name = r[name_idx] + f" {r[thickness_idx]} мм" if thickness != None else r[name_idx]
-        price = Decimal(str(r[price_idx]))
-        wl = r[width_idx] if width_idx != -1 else None
-        category_name = r[category_idx]
+    for row in worksheet.iter_rows(min_row=2):
+        thickness = row[thickness_idx].value if thickness_idx != -1 else None
+        raw_name = row[name_idx].value
+
+        if raw_name is None:
+            continue
+
+        name = raw_name if thickness is None else f"{raw_name} {thickness} мм"
+        price = Decimal(str(row[price_idx].value))
+        raw_format = row[format_idx].value if format_idx != -1 else None
+        category_name = row[category_idx].value
         category_name = category_name.strip() if isinstance(category_name, str) else category_name
-        wl = wl.strip() if isinstance(wl, str) else ""
+        format_value = raw_format.strip() if isinstance(raw_format, str) else ""
 
-        if "*" in wl:
-            width, length = map(str.strip, wl.split("*", 1))
-            width = int(width)
-            length = int(length)
+        image_url = None
+        if image_idx != -1:
+            image_cell = row[image_idx]
+            if image_cell.hyperlink is not None and image_cell.hyperlink.target:
+                image_url = image_cell.hyperlink.target.strip() or None
+            elif isinstance(image_cell.value, str):
+                image_url = image_cell.value.strip() or None
+
+        if "*" in format_value:
+            width, length = map(str.strip, format_value.split("*", 1))
+            max_width = int(width)
+            max_length = int(length)
         else:
-            width, length = None, None
+            max_width, max_length = None, None
 
-        ans.append({"name": name, "thickness_mm": thickness, "price_per_m2": price, "max_width": width, "max_length": length, "category_name": category_name})
+        products.append(
+            {
+                "name": name,
+                "image_url": image_url,
+                "thickness_mm": thickness,
+                "price_per_m2": price,
+                "max_width": max_width,
+                "max_length": max_length,
+                "category_name": category_name,
+            }
+        )
 
-    return ans
+    return products
 
 
 def parse_categories_of_products(file_bytes: bytes):
-    """Считывает категории продуктов и возвращает в удобном формате для массовой вставки.
-
-    **Параметры**:
-        - file_bytes - байты файла
-
-    **Возвращает**:
-        - Список из словарей со значениями "category_name" для удобной вставки 
-    """
-    wb = openpyxl.load_workbook(BytesIO(file_bytes), data_only=True)
-    ws = wb.active
+    """Read unique product categories from an xlsx file."""
+    workbook = openpyxl.load_workbook(BytesIO(file_bytes), data_only=True)
+    worksheet = workbook.active
 
     headers = []
     categories_col_id = -1
 
-    for cell in ws[1]:
-        val = cell.value or ""
-        headers.append(str(val).strip().lower())
+    for cell in worksheet[1]:
+        value = cell.value or ""
+        headers.append(str(value).strip().lower())
 
-    for i in range(len(headers)):
-        if headers[i].startswith("катег"):
-            categories_col_id = i + 1
+    for index, header in enumerate(headers, start=1):
+        if header.startswith("катег"):
+            categories_col_id = index
             break
 
     if categories_col_id == -1:
         raise HTTPException(status_code=400, detail="Нет колонок с категориями")
 
-    repeats = set()
-    lst = []
-    for r in ws.iter_rows(min_row=2, min_col=categories_col_id, max_col=categories_col_id, values_only=True):
-        if r[0] is not None and str(r[0]).strip() != "" and str(r[0]) not in repeats:
-            lst.append({"category_name": str(r[0])})  
-            repeats.add(str(r[0]))
-        else:
+    seen = set()
+    categories = []
+    for row in worksheet.iter_rows(
+        min_row=2,
+        min_col=categories_col_id,
+        max_col=categories_col_id,
+        values_only=True,
+    ):
+        if row[0] is None:
             continue
 
-    if not lst:
+        category_name = str(row[0]).strip()
+        if category_name == "" or category_name.lower() in seen:
+            continue
+
+        categories.append({"category_name": category_name})
+        seen.add(category_name.lower())
+
+    if not categories:
         raise HTTPException(status_code=400, detail="Нет категорий товара")
-    
-    return lst
+
+    return categories

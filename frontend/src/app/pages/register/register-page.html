@@ -1,0 +1,58 @@
+<div class="auth-page">
+  <div class="auth-layout">
+    <section class="auth-panel glass-card">
+      <span class="auth-panel__eyebrow">Регистрация</span>
+      <h1 class="auth-panel__title">Собирай стекло под проект в своем темпе.</h1>
+      <p class="auth-panel__text">
+        После регистрации откроется подтверждение почты, а дальше можно будет добавлять позиции в
+        корзину, менять параметры и возвращаться к расчетам без потерь.
+      </p>
+
+      <ul class="auth-panel__list">
+        <li>Собственная корзина для материалов и обработок.</li>
+        <li>Быстрый доступ к повторным расчетам после входа.</li>
+        <li>Почта используется как главный ключ к заказам.</li>
+      </ul>
+    </section>
+
+    <section class="auth-card glass-card">
+      <h2 class="auth-card__heading">Создать аккаунт</h2>
+      <p class="auth-card__subheading">
+        Код подтверждения придет на email сразу после регистрации.
+      </p>
+
+      @if (error) {
+        <div class="status-banner status-banner_error">{{ error }}</div>
+      }
+
+      <form class="auth-card__form" (ngSubmit)="submit()">
+        <label class="field-label">
+          Email
+          <input class="field" type="email" name="email" [(ngModel)]="email" required />
+        </label>
+
+        <label class="field-label">
+          Пароль
+          <input
+            class="field"
+            type="password"
+            name="password"
+            [(ngModel)]="password"
+            minlength="5"
+            required
+          />
+        </label>
+
+        <div class="auth-card__actions">
+          <button class="solid-button" type="submit" [disabled]="loading">
+            {{ loading ? 'Создаю аккаунт...' : 'Продолжить' }}
+          </button>
+        </div>
+      </form>
+
+      <div class="auth-card__footer">
+        Уже зарегистрирован? <a routerLink="/login">Войти</a>
+      </div>
+    </section>
+  </div>
+</div>

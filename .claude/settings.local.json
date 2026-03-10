@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(find /c/Users/Ghost/Desktop/GlassSelling/frontend/src -type f \\\\\\( -name \"*.tsx\" -o -name \"*.ts\" \\\\\\) 2>/dev/null | sort)",
+      "Bash(find /c/Users/Ghost/Desktop/GlassSelling/frontend/src -type f -name \"*config*\" -o -name \"*product*\" -o -name \"*glass*\" -o -name \"*edge*\" -o -name \"*facet*\" 2>/dev/null | sort)",
+      "Bash(cd C:/Users/Ghost/Desktop/GlassSelling/frontend && npx ng build 2>&1 | tail -20)"
+    ]
+  }
+}

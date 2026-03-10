@@ -1,0 +1,847 @@
+<div class="page home">
+  <section class="hero">
+    <div class="hero__content">
+      <p class="hero__eyebrow">Стекло и зеркала под частные и коммерческие проекты</p>
+      <h1
+        class="hero__title"
+        [style.fontVariationSettings]="heroTitleVariation()"
+        [style.letter-spacing]="heroTitleTracking()"
+      >
+        Стекло и зеркала, которые ощущаются частью интерьера.
+      </h1>
+      <p class="hero__text">
+        Подберите материал, размеры и обработку в одном спокойном сценарии. Без перегруженных экранов,
+        случайных акцентов и растянутых блоков: только точная геометрия, корректная стоимость и аккуратная подача.
+      </p>
+
+      <div class="hero__actions">
+        <button class="solid-button" type="button" (click)="scrollTo('catalog')">Перейти к каталогу</button>
+        <button class="ghost-button" type="button" (click)="scrollTo('contacts')">Обсудить проект</button>
+      </div>
+
+      <div class="hero__stats">
+        @for (item of heroStats; track item.label; let index = $index) {
+          <article
+            class="hero__stat glass-card"
+            [animate.enter]="'enter-rise'"
+            [style.--enter-delay]="(index * 90 + 100) + 'ms'"
+          >
+            <span class="hero__stat-value">{{ item.value }}</span>
+            <span class="hero__stat-label">{{ item.label }}</span>
+          </article>
+        }
+      </div>
+    </div>
+
+    <div class="hero__visuals">
+      <article class="hero-stage glass-card" [animate.enter]="'enter-rise'" style="--enter-delay: 140ms">
+        <div class="hero-stage__media">
+          <img src="/img/main1.png" alt="Зеркальное полотно с ровной кромкой" />
+          <div class="hero-stage__overlay">
+            <span class="hero-stage__eyebrow">Interior mirror</span>
+            <strong>Чистая плоскость, ровная кромка и мягкое отражение без визуального шума.</strong>
+          </div>
+        </div>
+      </article>
+
+      <div class="hero-side">
+        <article class="hero-detail glass-card" [animate.enter]="'enter-rise'" style="--enter-delay: 220ms">
+          <p class="hero-detail__eyebrow">Под проект</p>
+          <h2>От базового полотна до финальной обработки в одном понятном сценарии.</h2>
+          <p>
+            Размеры, кромка, фацет и итоговая стоимость собираются в одной последовательности без шумных декоративных
+            блоков и случайных состояний.
+          </p>
+        </article>
+
+        <article
+          class="hero-detail hero-detail_image glass-card"
+          [animate.enter]="'enter-rise'"
+          style="--enter-delay: 300ms"
+        >
+          <div class="hero-detail__media">
+            <img src="/img/main2.png" alt="Фрагмент стеклянной поверхности" />
+          </div>
+          <div class="hero-detail__body">
+            <p class="hero-detail__eyebrow">Glass surface</p>
+            <strong>Материал, мебельные плоскости, фасады и коммерческие решения в одной системе.</strong>
+          </div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="promise-grid">
+    @for (item of promises; track item; let index = $index) {
+      <article class="promise glass-card" [animate.enter]="'enter-rise'" [style.--enter-delay]="(index * 90 + 180) + 'ms'">
+        <p>{{ item }}</p>
+      </article>
+    }
+  </section>
+
+  <section class="catalog-section" id="catalog">
+    <div class="section-heading">
+      <div>
+        <p class="section-heading__eyebrow">Каталог</p>
+        <h2>Выберите основу вашего проекта</h2>
+        <p class="section-heading__lead">
+          Отберите материал по задаче, а потом соберите изделие по размерам, обработке и количеству без сухих
+          технических таблиц.
+        </p>
+      </div>
+
+      <div class="section-heading__aside">
+        @if (shop.catalogLoading()) {
+          <span class="section-heading__note">Подбираем актуальные позиции</span>
+        }
+        <button class="ghost-button" type="button" (click)="scrollTo('contacts')">Нужен ручной просчет</button>
+      </div>
+    </div>
+
+    @if (shop.catalogError()) {
+      <div class="status-banner status-banner_error">{{ shop.catalogError() }}</div>
+    }
+
+    @if (showCatalogSkeleton()) {
+      <div class="catalog-tabs catalog-tabs_skeleton">
+        @for (tab of tabSkeletons; track tab) {
+          <span class="catalog-tabs__skeleton skeleton"></span>
+        }
+      </div>
+
+      <div class="catalog-layout">
+        <aside class="configurator configurator_skeleton glass-card">
+          <span class="configurator__skeleton-stage skeleton"></span>
+          <span class="configurator__skeleton-line skeleton"></span>
+          <span class="configurator__skeleton-line configurator__skeleton-line_short skeleton"></span>
+          <div class="configurator__skeleton-grid">
+            <span class="skeleton"></span>
+            <span class="skeleton"></span>
+            <span class="skeleton"></span>
+          </div>
+        </aside>
+      </div>
+    } @else {
+      <div class="catalog-tabs">
+        @for (category of shop.categories(); track category.id) {
+          <button
+            class="pill-button catalog-tabs__button"
+            type="button"
+            [class.catalog-tabs__button_active]="shop.selectedCategoryId() === category.id"
+            (click)="chooseCategory(category.id)"
+          >
+            {{ category.category_name }}
+          </button>
+        }
+      </div>
+
+      <div class="material-rail">
+        @for (product of shop.currentProducts(); track product.id) {
+          <button
+            class="material-rail__item"
+            type="button"
+            [class.material-rail__item_active]="selectedProduct()?.id === product.id"
+            (click)="chooseProduct(product.id)"
+          >
+            @if (productPhotoUrl(product)) {
+              <span class="material-rail__swatch" [style.background]="materialSwatchStyle(product)"></span>
+            }
+            <span class="material-rail__label">{{ product.name }}</span>
+            <span class="material-rail__meta">{{ materialTone(product) }} · {{ materialAtmosphere(product) }}</span>
+          </button>
+        }
+      </div>
+
+      <div class="catalog-layout">
+        <div class="catalog-grid catalog-grid_hidden" aria-hidden="true">
+          @for (product of shop.currentProducts(); track product.id) {
+            <article
+              #catalogCard
+              class="product-card glass-card"
+              [class.product-card_active]="selectedProduct()?.id === product.id"
+            >
+              <div class="product-card__shine"></div>
+
+              <div class="product-card__visual">
+                <img
+                  class="product-card__visual-image"
+                  [src]="materialImageUrl(product)"
+                  [style.object-position]="materialImagePosition(product)"
+                  [alt]="product.name"
+                />
+                <span class="product-card__visual-tint" [style.background]="materialCardOverlayStyle(product)"></span>
+                <div class="product-card__material-pill">
+                  <span class="product-card__swatch" [style.background]="materialSwatchStyle(product)"></span>
+                  <div>
+                    <strong>{{ materialTone(product) }}</strong>
+                    <span>{{ materialAtmosphere(product) }}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="product-card__top">
+                <div>
+                  <p class="product-card__eyebrow">Материал #{{ product.id }}</p>
+                  <h3>{{ product.name }}</h3>
+                </div>
+
+                @if (product.thickness_mm != null) {
+                  <span class="product-card__badge">{{ product.thickness_mm }} мм</span>
+                }
+              </div>
+
+              <div class="product-card__meta">
+                <span>Базовая ставка</span>
+                <strong>{{ formatPrice(product.price_per_m2) }}</strong>
+              </div>
+
+              <div class="product-card__range-list">
+                <p class="product-card__range">
+                  {{ formatDimension(product.min_width) }} - {{ formatDimension(product.max_width) }}
+                  по ширине
+                </p>
+                <p class="product-card__range">
+                  {{ formatDimension(product.min_length) }} - {{ formatDimension(product.max_length) }}
+                  по длине
+                </p>
+              </div>
+
+              <button class="ghost-button product-card__button" type="button" (click)="chooseProduct(product.id)">
+                Настроить материал
+              </button>
+            </article>
+          }
+        </div>
+
+        <aside class="configurator glass-card" id="configurator">
+          @if (shop.selectedConfig(); as config) {
+            <div class="configurator__head">
+              <div class="configurator__headline">
+                <span class="configurator__material-swatch" [style.background]="materialSwatchStyle(config.product)"></span>
+                <div>
+                  <p class="configurator__eyebrow">Конфигуратор</p>
+                  <h3>{{ config.product.name }}</h3>
+                  <p class="configurator__range">{{ productRangeLabel() }}</p>
+                </div>
+              </div>
+
+              <div class="configurator__price-tag">
+                <span>Базовая ставка</span>
+                <strong>{{ formatPrice(config.product.price_per_m2) }} / м²</strong>
+              </div>
+            </div>
+
+            <div class="configurator__budget" [style.--budget-accent]="materialAccent(config.product)">
+              <div class="configurator__budget-main">
+                <span>Онлайн-смета</span>
+                <strong>{{ formatPrice(previewPrice()) }}</strong>
+              </div>
+              <p>{{ formatArea(previewArea()) }} · {{ form().qty }} шт · {{ ratioLabel() }}</p>
+
+              @if (selectedEdge() || selectedFacet() || selectedTempering()) {
+                <div class="configurator__budget-options">
+                  @if (selectedEdge(); as edge) {
+                    <span class="configurator__budget-tag">
+                      <span class="configurator__budget-tag-dot configurator__budget-tag-dot_edge"></span>
+                      {{ formatEdgeLabel(edge) }}
+                    </span>
+                  }
+                  @if (selectedFacet(); as facet) {
+                    <span class="configurator__budget-tag">
+                      <span class="configurator__budget-tag-dot configurator__budget-tag-dot_facet"></span>
+                      {{ formatFacetLabel(facet) }}
+                    </span>
+                  }
+                  @if (selectedTempering(); as tempering) {
+                    <span class="configurator__budget-tag">
+                      <span class="configurator__budget-tag-dot configurator__budget-tag-dot_tempering"></span>
+                      {{ formatTemperingLabel(tempering) }}
+                    </span>
+                  }
+                </div>
+              }
+
+              @if (activeStep() < 3) {
+                <button
+                  class="solid-button configurator__budget-action"
+                  type="button"
+                  [disabled]="activeStep() === 1 && !isSizeStepValid()"
+                  (click)="nextStep()"
+                >
+                  Продолжить
+                </button>
+              } @else {
+                <button class="solid-button configurator__budget-action" type="button" (click)="addToCart()">
+                  Добавить в корзину
+                </button>
+              }
+            </div>
+
+            <div class="configurator__stage">
+              <div
+                class="configurator__preview"
+                #previewStage
+                [style.background]="materialSceneStyle(config.product)"
+              >
+                <div class="configurator__preview-surface"></div>
+                <div
+                  class="configurator__mirror"
+                  [class.configurator__mirror_tempered]="selectedTempering()"
+                  [style.width.px]="previewGeometry().frameWidth"
+                  [style.height.px]="previewGeometry().frameHeight"
+                  [style.border-radius.px]="previewGeometry().cornerRadius"
+                  [style.--mirror-accent]="materialAccent(config.product)"
+                  [style.--mirror-edge-width]="previewGeometry().bevelWidth + 'px'"
+                >
+                  <span class="configurator__mirror-edge"></span>
+                  <span class="configurator__mirror-reflection"></span>
+                  <span class="configurator__mirror-reflection configurator__mirror-reflection_secondary"></span>
+                  <span class="configurator__dimension configurator__dimension_horizontal">
+                    {{ previewGeometry().width }} mm
+                  </span>
+                  <span class="configurator__dimension configurator__dimension_vertical">
+                    {{ previewGeometry().height }} mm
+                  </span>
+                </div>
+
+                <div class="configurator__preview-meta">
+                  <div>
+                    <span>Формат</span>
+                    <strong>{{ previewGeometry().width }} × {{ previewGeometry().height }} мм</strong>
+                  </div>
+                  <div>
+                    <span>Пропорция</span>
+                    <strong>{{ ratioLabel() }}</strong>
+                  </div>
+                </div>
+              </div>
+
+              <div class="configurator__chips">
+                @for (item of selectionSummary(); track item) {
+                  <span class="configurator__chip">{{ item }}</span>
+                }
+              </div>
+            </div>
+
+            <div class="stepper">
+              @for (step of steps; track step.id) {
+                <button
+                  class="stepper__item"
+                  type="button"
+                  [class.stepper__item_active]="activeStep() === step.id"
+                  [class.stepper__item_complete]="isStepComplete(step.id)"
+                  [disabled]="!canOpenStep(step.id)"
+                  (click)="setStep(step.id)"
+                >
+                  <span class="stepper__index">0{{ step.id }}</span>
+                  <span class="stepper__body">
+                    <strong>{{ step.title }}</strong>
+                    <span>{{ step.description }}</span>
+                  </span>
+                </button>
+              }
+            </div>
+
+            @if (shop.actionMessage()) {
+              <div class="status-banner status-banner_success">{{ shop.actionMessage() }}</div>
+            }
+
+            @if (dimensionsWarning()) {
+              <div class="status-banner status-banner_error">{{ dimensionsWarning() }}</div>
+            }
+
+            @if (activeStep() === 1) {
+              <section class="config-step" [animate.enter]="'enter-rise'">
+                <div class="config-step__header">
+                  <div>
+                    <p class="config-step__eyebrow">Шаг 1</p>
+                    <h4>Задайте размеры полотна</h4>
+                  </div>
+                  <p>Размеры меняют пропорции в SVG в реальном времени и сразу влияют на расчет.</p>
+                </div>
+
+                <div class="dimension-overview">
+                  <article class="dimension-overview__card">
+                    <span>Рабочий диапазон</span>
+                    <strong>{{ productRangeLabel() }}</strong>
+                  </article>
+                  <article class="dimension-overview__card">
+                    <span>Текущая пропорция</span>
+                    <strong>{{ ratioLabel() }}</strong>
+                  </article>
+                </div>
+
+                <div class="preset-row">
+                  <button class="ghost-button" type="button" (click)="applyPreset('min')">Минимум</button>
+                  <button class="ghost-button" type="button" (click)="applyPreset('balanced')">Сбалансированный</button>
+                  <button class="ghost-button" type="button" (click)="applyPreset('max')">Максимум</button>
+                </div>
+
+                <div class="floating-grid">
+                  <label class="floating-field">
+                    <input
+                      class="floating-field__control"
+                      type="number"
+                      min="100"
+                      placeholder=" "
+                      [value]="form().widthMm ?? ''"
+                      (input)="updateNumber('widthMm', $any($event.target).value)"
+                    />
+                    <span class="floating-field__label">Ширина, мм</span>
+                    <small>
+                      Рабочий диапазон: {{ formatDimension(selectedProduct()?.min_width) }} -
+                      {{ formatDimension(selectedProduct()?.max_width) }}
+                    </small>
+                  </label>
+
+                  <label class="floating-field">
+                    <input
+                      class="floating-field__control"
+                      type="number"
+                      min="100"
+                      placeholder=" "
+                      [value]="form().lengthMm ?? ''"
+                      (input)="updateNumber('lengthMm', $any($event.target).value)"
+                    />
+                    <span class="floating-field__label">Длина, мм</span>
+                    <small>
+                      Рабочий диапазон: {{ formatDimension(selectedProduct()?.min_length) }} -
+                      {{ formatDimension(selectedProduct()?.max_length) }}
+                    </small>
+                  </label>
+                </div>
+
+                <div class="config-step__footer">
+                  <span>Когда размеры валидны, откроется выбор обработки и финальная настройка заказа.</span>
+                  <button class="solid-button" type="button" [disabled]="!isSizeStepValid()" (click)="nextStep()">
+                    Продолжить
+                  </button>
+                </div>
+              </section>
+            }
+
+            @if (activeStep() === 2) {
+              <section class="config-step" [animate.enter]="'enter-rise'">
+                <div class="config-step__header">
+                  <div>
+                    <p class="config-step__eyebrow">Шаг 2</p>
+                    <h4>Соберите обработку под сценарий использования</h4>
+                  </div>
+                  <p>Вместо списка полей вы выбираете характер торца и декоративный акцент как в витрине.</p>
+                </div>
+
+                <div class="config-select-grid">
+                  <label class="config-select-card">
+                    <span class="config-select-card__label">Кромка</span>
+                    <select
+                      class="select-field config-select-card__control"
+                      [value]="selectedOptionValue(form().edgeId)"
+                      (change)="updateOption('edgeId', $any($event.target).value)"
+                    >
+                      <option value="">Без обработки</option>
+                      @for (edge of config.edges; track edge.id) {
+                        <option [value]="optionValue(edge.id)">
+                          {{ formatEdgeLabel(edge) }} · {{ formatPrice(edge.price) }}
+                        </option>
+                      }
+                    </select>
+                    <small>{{ edgeSelectionSummary() }}</small>
+                  </label>
+
+                  <label class="config-select-card">
+                    <span class="config-select-card__label">Фацет</span>
+                    <select
+                      class="select-field config-select-card__control"
+                      [value]="selectedOptionValue(form().facetId)"
+                      (change)="updateOption('facetId', $any($event.target).value)"
+                    >
+                      <option value="">Без фацета</option>
+                      @for (facet of config.facets; track facet.id) {
+                        <option [value]="optionValue(facet.id)">
+                          {{ formatFacetLabel(facet) }} · {{ formatPrice(facet.price) }}
+                        </option>
+                      }
+                    </select>
+                    <small>{{ facetSelectionSummary() }}</small>
+                  </label>
+                </div>
+
+                <div class="option-block">
+                  <div class="option-block__header">
+                    <h5>Кромка</h5>
+                    <p>Как должен читаться торец материала.</p>
+                  </div>
+
+                  <div class="choice-grid">
+                    <button
+                      class="choice-card"
+                      type="button"
+                      [class.choice-card_selected]="form().edgeId == null"
+                      (click)="updateOption('edgeId', '')"
+                    >
+                      <div class="choice-card__head">
+                        <span class="choice-card__swatch" [style.background]="edgeSwatchStyle(null)"></span>
+                        <div>
+                          <span class="choice-card__title">Чистый край</span>
+                          <span class="choice-card__text">{{ edgeOptionText(null) }}</span>
+                        </div>
+                      </div>
+                      <strong>{{ formatPrice(0) }}</strong>
+                    </button>
+
+                    @for (edge of config.edges; track edge.id) {
+                      <button
+                        class="choice-card"
+                        type="button"
+                        [class.choice-card_selected]="form().edgeId === edge.id"
+                        (click)="updateOption('edgeId', optionValue(edge.id))"
+                      >
+                        <div class="choice-card__head">
+                          <span class="choice-card__swatch" [style.background]="edgeSwatchStyle(edge)"></span>
+                          <div>
+                            <span class="choice-card__title">{{ formatEdgeLabel(edge) }}</span>
+                            <span class="choice-card__text">{{ edgeOptionText(edge) }}</span>
+                          </div>
+                        </div>
+                        <strong>{{ formatPrice(edge.price) }}</strong>
+                      </button>
+                    }
+                  </div>
+                </div>
+
+                <div class="option-block">
+                  <div class="option-block__header">
+                    <h5>Фацет</h5>
+                    <p>Декоративная геометрия для более глубокого светового рисунка.</p>
+                  </div>
+
+                  <div class="choice-grid">
+                    <button
+                      class="choice-card"
+                      type="button"
+                      [class.choice-card_selected]="form().facetId == null"
+                      (click)="updateOption('facetId', '')"
+                    >
+                      <div class="choice-card__head">
+                        <span class="choice-card__swatch" [style.background]="facetSwatchStyle(null)"></span>
+                        <div>
+                          <span class="choice-card__title">Без фацета</span>
+                          <span class="choice-card__text">{{ facetOptionText(null) }}</span>
+                        </div>
+                      </div>
+                      <strong>{{ formatPrice(0) }}</strong>
+                    </button>
+
+                    @for (facet of config.facets; track facet.id) {
+                      <button
+                        class="choice-card"
+                        type="button"
+                        [class.choice-card_selected]="form().facetId === facet.id"
+                        (click)="updateOption('facetId', optionValue(facet.id))"
+                      >
+                        <div class="choice-card__head">
+                          <span class="choice-card__swatch" [style.background]="facetSwatchStyle(facet)"></span>
+                          <div>
+                            <span class="choice-card__title">{{ formatFacetLabel(facet) }}</span>
+                            <span class="choice-card__text">{{ facetOptionText(facet) }}</span>
+                          </div>
+                        </div>
+                        <strong>{{ formatPrice(facet.price) }}</strong>
+                      </button>
+                    }
+                  </div>
+                </div>
+
+                <div class="config-step__footer">
+                  <button class="ghost-button" type="button" (click)="previousStep()">Назад</button>
+                  <button class="solid-button" type="button" (click)="nextStep()">Перейти к финалу</button>
+                </div>
+              </section>
+            }
+
+            @if (activeStep() === 3) {
+              <section class="config-step" [animate.enter]="'enter-rise'">
+                <div class="config-step__header">
+                  <div>
+                    <p class="config-step__eyebrow">Шаг 3</p>
+                    <h4>Финальная настройка и стоимость</h4>
+                  </div>
+                  <p>Осталось определить закалку, количество и сохранить позицию в корзину.</p>
+                </div>
+
+                <div class="option-block">
+                  <div class="option-block__header">
+                    <h5>Закалка</h5>
+                    <p>Подходит, если нужна дополнительная надежность для активного сценария использования.</p>
+                  </div>
+
+                  <div class="choice-grid">
+                    <button
+                      class="choice-card"
+                      type="button"
+                      [class.choice-card_selected]="form().temperingId == null"
+                      (click)="updateOption('temperingId', '')"
+                    >
+                      <div class="choice-card__head">
+                        <span class="choice-card__swatch" [style.background]="temperingSwatchStyle(null)"></span>
+                        <div>
+                          <span class="choice-card__title">Без закалки</span>
+                          <span class="choice-card__text">{{ temperingOptionText(null) }}</span>
+                        </div>
+                      </div>
+                      <strong>{{ formatPrice(0) }}</strong>
+                    </button>
+
+                    @for (tempering of config.temperings; track tempering.id) {
+                      <button
+                        class="choice-card"
+                        type="button"
+                        [class.choice-card_selected]="form().temperingId === tempering.id"
+                        (click)="updateOption('temperingId', optionValue(tempering.id))"
+                      >
+                        <div class="choice-card__head">
+                          <span class="choice-card__swatch" [style.background]="temperingSwatchStyle(tempering)"></span>
+                          <div>
+                            <span class="choice-card__title">{{ formatTemperingLabel(tempering) }}</span>
+                            <span class="choice-card__text">{{ temperingOptionText(tempering) }}</span>
+                          </div>
+                        </div>
+                        <strong>{{ formatPrice(tempering.price) }}</strong>
+                      </button>
+                    }
+                  </div>
+                </div>
+
+                <div class="config-select-grid">
+                  <label class="config-select-card config-select-card_full">
+                    <span class="config-select-card__label">Закалка</span>
+                    <select
+                      class="select-field config-select-card__control"
+                      [value]="selectedOptionValue(form().temperingId)"
+                      (change)="updateOption('temperingId', $any($event.target).value)"
+                    >
+                      <option value="">Без закалки</option>
+                      @for (tempering of config.temperings; track tempering.id) {
+                        <option [value]="optionValue(tempering.id)">
+                          {{ formatTemperingLabel(tempering) }} · {{ formatPrice(tempering.price) }}
+                        </option>
+                      }
+                    </select>
+                    <small>{{ temperingSelectionSummary() }}</small>
+                  </label>
+                </div>
+
+                <div class="final-grid">
+                  <div class="final-card final-card_qty">
+                    <span class="final-card__label">Количество</span>
+                    <div class="qty-stepper">
+                      <button type="button" (click)="adjustQty(-1)">−</button>
+                      <input
+                        class="qty-stepper__input"
+                        type="number"
+                        min="1"
+                        max="99"
+                        [value]="form().qty"
+                        (input)="updateNumber('qty', $any($event.target).value)"
+                      />
+                      <button type="button" (click)="adjustQty(1)">+</button>
+                    </div>
+                  </div>
+
+                  <div class="final-card">
+                    <span class="final-card__label">Цена за изделие</span>
+                    <strong>{{ formatPrice(pricePerPiece()) }}</strong>
+                  </div>
+                </div>
+
+                <div class="configurator__summary">
+                  <div>
+                    <span>Площадь</span>
+                    <strong>{{ formatArea(previewArea()) }}</strong>
+                  </div>
+                  <div>
+                    <span>Количество</span>
+                    <strong>{{ form().qty }} шт</strong>
+                  </div>
+                  <div>
+                    <span>Предварительная сумма</span>
+                    <strong>{{ formatPrice(previewPrice()) }}</strong>
+                  </div>
+                </div>
+
+                <div class="configurator__actions">
+                  <button class="solid-button" type="button" (click)="addToCart()">Добавить в корзину</button>
+                  <button class="ghost-button" type="button" (click)="scrollTo('contacts')">Нужна помощь менеджера</button>
+                </div>
+
+                @if (!user()) {
+                  <p class="configurator__login-note">Для сохранения позиции потребуется вход в аккаунт.</p>
+                }
+
+                <div class="config-step__footer config-step__footer_back">
+                  <button class="ghost-button" type="button" (click)="previousStep()">Вернуться к обработке</button>
+                </div>
+              </section>
+            }
+
+            @if (shop.configLoading()) {
+              <div class="configurator__overlay">
+                <div class="configurator__overlay-panel glass-card">
+                  <span class="configurator__skeleton-line skeleton"></span>
+                  <span class="configurator__skeleton-line configurator__skeleton-line_short skeleton"></span>
+                  <div class="configurator__skeleton-grid">
+                    <span class="skeleton"></span>
+                    <span class="skeleton"></span>
+                    <span class="skeleton"></span>
+                  </div>
+                </div>
+              </div>
+            }
+          } @else {
+            <div class="configurator__empty">
+              <span class="configurator__empty-kicker">Конфигуратор оживает после выбора материала</span>
+              <h3>Сначала выберите стекло или зеркало из каталога</h3>
+              <p>
+                Затем здесь появятся пропорции в SVG, этапы выбора обработки и финальная стоимость в три понятных
+                шага.
+              </p>
+            </div>
+          }
+        </aside>
+      </div>
+    }
+  </section>
+
+  <section class="bottom-grid">
+    <section class="cart-panel glass-card" id="cart">
+      <div class="section-heading">
+        <div>
+          <p class="section-heading__eyebrow">Корзина</p>
+          <h2>Все, что вы уже собрали</h2>
+          <p class="section-heading__lead">Позиции синхронизируются с вашим аккаунтом и остаются готовыми к оформлению.</p>
+        </div>
+
+        @if (user() && shop.cart()?.items?.length) {
+          <button class="ghost-button" type="button" (click)="clearCart()">Очистить</button>
+        }
+      </div>
+
+      @if (!user()) {
+        <div class="cart-panel__empty">
+          <p>Чтобы корзина сохранялась между заходами и стала персональной, войдите в аккаунт.</p>
+          <button class="solid-button" type="button" (click)="scrollTo('catalog')">Сначала выбрать материал</button>
+        </div>
+      } @else if (shop.cartError()) {
+        <div class="status-banner status-banner_error">{{ shop.cartError() }}</div>
+      } @else if (showCartSkeleton()) {
+        <div class="cart-list">
+          @for (item of cartSkeletons; track item) {
+            <article class="cart-item cart-item_skeleton">
+              <span class="cart-item__skeleton-line skeleton"></span>
+              <span class="cart-item__skeleton-line cart-item__skeleton-line_short skeleton"></span>
+              <span class="cart-item__skeleton-line skeleton"></span>
+            </article>
+          }
+        </div>
+      } @else if (!shop.cart()?.items?.length) {
+        <div class="cart-panel__empty">
+          <p>Пока пусто. Добавьте материал из каталога, и он сразу появится здесь.</p>
+        </div>
+      } @else {
+        <div class="cart-list">
+          @for (item of cartPreviewItems(); track item.id) {
+            <article class="cart-item" [class.cart-item_unavailable]="!item.is_available">
+              <div class="cart-item__main">
+                <div>
+                  <h3>{{ productName(item.product_id) }}</h3>
+                  <p>{{ productMeta(item.product_id) }}</p>
+                  <p>{{ item.width_mm }} × {{ item.length_mm }} мм · {{ cartOptions(item) }}</p>
+                </div>
+
+                <div class="cart-item__price">
+                  <strong>{{ formatPrice(item.current_price) }}</strong>
+                  @if (item.price_changed) {
+                    <span>цена обновилась</span>
+                  }
+                </div>
+              </div>
+
+              @if (item.error_message) {
+                <div class="status-banner status-banner_error">{{ item.error_message }}</div>
+              }
+
+              <div class="cart-item__footer">
+                <div class="cart-item__qty">
+                  <button type="button" [disabled]="item.quantity <= 1" (click)="decreaseQty(item)">−</button>
+                  <span>{{ item.quantity }}</span>
+                  <button type="button" (click)="increaseQty(item)">+</button>
+                </div>
+
+                <button class="ghost-button" type="button" (click)="shop.removeFromCart(item.id)">
+                  Удалить
+                </button>
+              </div>
+            </article>
+          }
+        </div>
+
+        @if (remainingCartItemsCount() > 0) {
+          <p class="cart-panel__more">Остальные позиции доступны в полной корзине.</p>
+        }
+
+        <div class="cart-total">
+          <div>
+            <span>Итого</span>
+            <strong>{{ formatPrice(shop.cart()?.total_price) }}</strong>
+          </div>
+          <p>
+            @if (shop.cart()?.can_order) {
+              Все позиции готовы к оформлению.
+            } @else {
+              В корзине есть позиции, которые лучше пересмотреть перед заказом.
+            }
+          </p>
+        </div>
+      }
+    </section>
+
+    <section class="contacts glass-card" id="contacts">
+      <div class="section-heading">
+        <div>
+          <p class="section-heading__eyebrow">Контакты</p>
+          <h2>Обсудим нестандартный проект вручную</h2>
+          <p class="section-heading__lead">
+            Если нужен сложный вырез, монтажный сценарий или серия изделий, подключим менеджера и технолога.
+          </p>
+        </div>
+      </div>
+
+      <div class="contacts__intro glass-card">
+        <p>
+          Отправьте размеры, эскиз или фото пространства. Поможем уточнить материал, обработку и срок производства
+          без перегруза техническими деталями.
+        </p>
+        <button class="solid-button" type="button">Отправить проект на просчет</button>
+      </div>
+
+      <div class="contacts__grid">
+        <div class="glass-card">
+          <span>Телефон</span>
+          <a href="tel:+74991234567">+7 (499) 123-45-67</a>
+        </div>
+        <div class="glass-card">
+          <span>Почта</span>
+          <a href="mailto:info@glasspg.ru">info@glasspg.ru</a>
+        </div>
+        <div class="glass-card">
+          <span>Адрес</span>
+          <p>Майкоп, ул. Пушкина, 123</p>
+        </div>
+        <div class="glass-card">
+          <span>График</span>
+          <p>Пн-Пт, 09:00 - 18:00</p>
+        </div>
+      </div>
+    </section>
+  </section>
+</div>

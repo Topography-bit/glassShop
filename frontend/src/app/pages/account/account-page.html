@@ -1,0 +1,77 @@
+<div class="page account-page">
+  <section class="account-page__hero glass-card">
+    <p class="account-page__eyebrow">Личный кабинет</p>
+    <h1>Все твои текущие расчеты и быстрые переходы в одном месте.</h1>
+    <p>
+      Здесь удобно вернуться в каталог, открыть корзину или, если у тебя админские права, перейти
+      к управлению данными.
+    </p>
+  </section>
+
+  @if (user(); as currentUser) {
+    <section class="account-page__grid">
+      <article class="account-card glass-card">
+        <p class="account-page__eyebrow">Профиль</p>
+        <h2>{{ currentUser.email }}</h2>
+        <div class="account-card__facts">
+          <div>
+            <span>Статус</span>
+            <strong>{{ currentUser.is_verified ? 'Почта подтверждена' : 'Почта не подтверждена' }}</strong>
+          </div>
+          <div>
+            <span>Роль</span>
+            <strong>{{ currentUser.is_admin ? 'Администратор' : 'Клиент' }}</strong>
+          </div>
+          <div>
+            <span>Доступ</span>
+            <strong>{{ currentUser.is_active ? 'Аккаунт активен' : 'Доступ ограничен' }}</strong>
+          </div>
+        </div>
+      </article>
+
+      <article class="account-card glass-card">
+        <p class="account-page__eyebrow">Быстрые действия</p>
+        <div class="account-card__actions">
+          <a class="solid-button" routerLink="/" fragment="catalog">Открыть каталог</a>
+          <a class="ghost-button" routerLink="/basket">Перейти в корзину</a>
+          @if (currentUser.is_admin) {
+            <a class="ghost-button" routerLink="/control">Открыть админку</a>
+          }
+        </div>
+      </article>
+    </section>
+
+    <section class="account-card glass-card">
+      <div class="account-page__header">
+        <div>
+          <p class="account-page__eyebrow">Корзина</p>
+          <h2>Короткий обзор текущего заказа</h2>
+        </div>
+        <div class="account-page__summary">
+          <span>{{ shop.cart()?.items?.length ?? 0 }} поз.</span>
+          <strong>{{ formatPrice(shop.cart()?.total_price) }}</strong>
+        </div>
+      </div>
+
+      @if (shop.cartError()) {
+        <div class="status-banner status-banner_error">{{ shop.cartError() }}</div>
+      } @else if (!shop.cart()?.items?.length) {
+        <p class="account-page__empty">Пока пусто. Самое время вернуться в каталог и собрать первый заказ.</p>
+      } @else {
+        <div class="account-page__preview">
+          @for (item of cartPreview(); track item.id) {
+            <article class="account-page__item">
+              <div>
+                <h3>{{ productName(item.product_id) }}</h3>
+                <p>{{ item.width_mm }} × {{ item.length_mm }} мм · {{ item.quantity }} шт.</p>
+              </div>
+              <strong>{{ formatPrice(item.current_price) }}</strong>
+            </article>
+          }
+        </div>
+
+        <a class="ghost-button account-page__more" routerLink="/basket">Открыть корзину целиком</a>
+      }
+    </section>
+  }
+</div>

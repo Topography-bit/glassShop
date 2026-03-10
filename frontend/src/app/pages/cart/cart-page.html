@@ -1,0 +1,210 @@
+<div class="page cart-page">
+  <section class="cart-page__hero glass-card">
+    <p class="cart-page__eyebrow">Отдельная корзина</p>
+    <h1>Проверь состав заказа перед оформлением.</h1>
+    <p>
+      Здесь собраны все выбранные материалы, размеры и обработки. Можно поправить количество,
+      удалить лишнее и сразу увидеть итог с доставкой.
+    </p>
+  </section>
+
+  <section class="cart-page__content glass-card">
+    <div class="cart-page__header">
+      <div>
+        <p class="cart-page__eyebrow">Состав заказа</p>
+        <h2>Текущая корзина</h2>
+      </div>
+      @if (user() && shop.cart()?.items?.length) {
+        <button class="ghost-button" type="button" (click)="clearCart()">Очистить корзину</button>
+      }
+    </div>
+
+    @if (!user()) {
+      <div class="cart-page__empty">
+        <p>Корзина доступна после входа. Сначала авторизуйся или вернись в каталог.</p>
+        <div class="cart-page__actions">
+          <a class="solid-button" routerLink="/login">Войти</a>
+          <a class="ghost-button" routerLink="/" fragment="catalog">Перейти к каталогу</a>
+        </div>
+      </div>
+    } @else if (shop.cartError()) {
+      <div class="status-banner status-banner_error">{{ shop.cartError() }}</div>
+    } @else if (!shop.cart()?.items?.length) {
+      <div class="cart-page__empty">
+        <p>Корзина пока пустая. Добавь хотя бы один материал из каталога.</p>
+        <a class="solid-button" routerLink="/" fragment="catalog">Открыть каталог</a>
+      </div>
+    } @else {
+      <div class="cart-page__items">
+        @for (item of shop.cart()!.items; track item.id) {
+          <article class="cart-page__item" [class.cart-page__item_problem]="!item.is_available">
+            <div class="cart-page__item-main">
+              <div>
+                <h3>{{ productName(item.product_id) }}</h3>
+                <p>{{ productMeta(item.product_id) }}</p>
+                <p>{{ item.width_mm }} × {{ item.length_mm }} мм · {{ cartOptions(item) }}</p>
+              </div>
+              <div class="cart-page__price">
+                <strong>{{ formatPrice(item.current_price) }}</strong>
+                @if (item.price_changed) {
+                  <span>цена пересчитана</span>
+                }
+              </div>
+            </div>
+
+            @if (item.error_message) {
+              <div class="status-banner status-banner_error">{{ item.error_message }}</div>
+            }
+
+            <div class="cart-page__item-footer">
+              <div class="cart-page__qty">
+                <button type="button" [disabled]="item.quantity <= 1" (click)="decreaseQty(item)">-</button>
+                <span>{{ item.quantity }}</span>
+                <button type="button" (click)="increaseQty(item)">+</button>
+              </div>
+
+              <button class="ghost-button" type="button" (click)="shop.removeFromCart(item.id)">
+                Удалить позицию
+              </button>
+            </div>
+          </article>
+        }
+      </div>
+
+      <section class="cart-page__delivery">
+        <div class="cart-page__delivery-head">
+          <div>
+            <p class="cart-page__eyebrow">Доставка</p>
+            <h3>Введи адрес и выбери точный вариант</h3>
+            <p>
+              Подсказки появляются по мере ввода, как в такси. Расчет делаем по выбранному адресу,
+              доставка доступна только в радиусе 50 км от Майкопа.
+            </p>
+          </div>
+          <span class="cart-page__delivery-badge">до 50 км</span>
+        </div>
+
+        <div class="cart-page__delivery-form">
+          <div class="cart-page__address-block">
+            <label class="field-label" for="delivery-address">Адрес доставки</label>
+            <div class="cart-page__autocomplete">
+              <input
+                id="delivery-address"
+                class="field"
+                type="text"
+                [value]="shop.deliveryAddress()"
+                placeholder="Например: Майкоп, ул. Пушкина, 123"
+                autocomplete="off"
+                (focus)="openSuggestions()"
+                (blur)="closeSuggestions()"
+                (input)="updateDeliveryAddress($any($event.target).value)"
+              />
+
+              @if (showSuggestions() && (shop.deliverySuggestionsLoading() || shop.deliverySuggestions().length || showEmptySuggestionsState())) {
+                <div class="cart-page__suggestions">
+                  @if (shop.deliverySuggestionsLoading()) {
+                    <div class="cart-page__suggestion-state">Ищу варианты адреса...</div>
+                  } @else if (shop.deliverySuggestions().length) {
+                    @for (suggestion of shop.deliverySuggestions(); track suggestion.full_address) {
+                      <button
+                        class="cart-page__suggestion"
+                        type="button"
+                        (mousedown)="selectDeliverySuggestion(suggestion, $event)"
+                      >
+                        <span class="cart-page__suggestion-main">
+                          <strong>{{ suggestion.title }}</strong>
+                          @if (suggestion.subtitle) {
+                            <small>{{ suggestion.subtitle }}</small>
+                          }
+                        </span>
+                        <span class="cart-page__suggestion-meta">
+                          <span>{{ formatDistance(suggestion.distance_km) }}</span>
+                          <span [class.cart-page__suggestion-meta_warning]="!suggestion.within_radius">
+                            {{ suggestion.within_radius ? 'в зоне доставки' : 'вне зоны доставки' }}
+                          </span>
+                        </span>
+                      </button>
+                    }
+                  } @else {
+                    <div class="cart-page__suggestion-state">
+                      Ничего точного не нашлось. Добавь населенный пункт, улицу и дом.
+                    </div>
+                  }
+                </div>
+              }
+            </div>
+            <p class="cart-page__hint">Выбери вариант из списка, чтобы адрес определился без ошибок.</p>
+          </div>
+
+          <div class="cart-page__actions">
+            <button class="solid-button" type="button" [disabled]="shop.deliveryLoading()" (click)="calculateDelivery()">
+              {{ shop.deliveryLoading() ? 'Считаю доставку...' : 'Рассчитать доставку' }}
+            </button>
+            <button class="ghost-button" type="button" [disabled]="shop.deliveryLoading()" (click)="clearDelivery()">
+              Очистить адрес
+            </button>
+          </div>
+        </div>
+
+        @if (shop.deliveryError()) {
+          <div class="status-banner status-banner_error">{{ shop.deliveryError() }}</div>
+        }
+
+        @if (shop.deliveryQuote(); as delivery) {
+          <div class="cart-page__delivery-summary">
+            <div>
+              <span>Найденный адрес</span>
+              <strong>{{ delivery.normalized_address || delivery.address }}</strong>
+            </div>
+            <div>
+              <span>Расстояние от Майкопа</span>
+              <strong>{{ formatDistance(delivery.distance_km) }}</strong>
+            </div>
+            <div>
+              <span>Доставка</span>
+              <strong>{{ formatPrice(delivery.delivery_price) }}</strong>
+            </div>
+            <div>
+              <span>Итого с доставкой</span>
+              <strong>{{ formatPrice(delivery.total_price) }}</strong>
+            </div>
+          </div>
+
+          <div class="status-banner" [class.status-banner_success]="delivery.within_radius" [class.status-banner_error]="!delivery.within_radius">
+            {{ delivery.message }}
+          </div>
+        }
+      </section>
+
+      <div class="cart-page__summary">
+        <div>
+          <span>Материалы и обработка</span>
+          <strong>{{ formatPrice(shop.cart()?.total_price) }}</strong>
+        </div>
+
+        @if (shop.deliveryQuote(); as delivery) {
+          <div>
+            <span>Доставка</span>
+            <strong>{{ formatPrice(delivery.delivery_price) }}</strong>
+          </div>
+          <div>
+            <span>Итого с доставкой</span>
+            <strong>{{ formatPrice(delivery.total_price) }}</strong>
+          </div>
+        }
+
+        <p>
+          @if (!shop.cart()?.can_order) {
+            В корзине есть позиции, которые лучше поправить перед заказом.
+          } @else if (readyForOrder()) {
+            Адрес входит в зону доставки. Корзина готова к следующему шагу.
+          } @else if (shop.deliveryQuote()?.within_radius === false) {
+            Доставка за пределы радиуса 50 км от Майкопа недоступна.
+          } @else {
+            Укажи адрес доставки, чтобы проверить километраж и финальную стоимость.
+          }
+        </p>
+      </div>
+    }
+  </section>
+</div>
