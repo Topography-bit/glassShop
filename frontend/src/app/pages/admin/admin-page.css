@@ -308,9 +308,14 @@
 .admin-list__item p {
   margin: 0.3rem 0 0;
   color: var(--text-soft);
+  overflow-wrap: anywhere;
 }
 
 @media (max-width: 980px) {
+  .admin-page {
+    padding: 1rem 0 1.5rem;
+  }
+
   .admin-import,
   .admin-grid {
     grid-template-columns: 1fr;
@@ -323,6 +328,11 @@
 }
 
 @media (max-width: 760px) {
+  .admin-page__hero,
+  .admin-card {
+    padding: 1rem;
+  }
+
   .admin-list__item {
     flex-direction: column;
     align-items: stretch;
@@ -333,5 +343,40 @@
   .admin-list__actions {
     flex-direction: column;
     align-items: stretch;
+  }
+
+  .admin-upload__actions > *,
+  .admin-actions > *,
+  .admin-list__actions > * {
+    width: 100%;
+  }
+}
+
+@media (max-width: 560px) {
+  .admin-page__tabs {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding-bottom: 0.2rem;
+  }
+
+  .admin-page__tabs button {
+    flex: 0 0 auto;
+    white-space: nowrap;
+  }
+
+  .admin-page__hero h1,
+  .admin-card h2 {
+    font-size: clamp(1.5rem, 7vw, 2rem);
+    line-height: 1;
+  }
+
+  .admin-upload__picker,
+  .admin-upload-panel,
+  .admin-spec-card {
+    padding: 0.95rem;
+  }
+
+  .admin-upload__picker strong {
+    font-size: 1.05rem;
   }
 }

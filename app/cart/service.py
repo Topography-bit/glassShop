@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import math
+import re
 from dataclasses import dataclass
 from decimal import Decimal, ROUND_HALF_UP
 
@@ -21,10 +22,35 @@ class GeoPoint:
     display_name: str
     lat: float
     lon: float
+    importance: float = 0.0
+    addresstype: str | None = None
 
 
 _GEOCODER_CACHE: dict[str, GeoPoint] = {}
 _GEOCODER_SUGGEST_CACHE: dict[str, list[GeoPoint]] = {}
+_SUGGESTION_LIMIT = 8
+_LOCALITY_ADDRESS_TYPES = frozenset(
+    {
+        "administrative",
+        "borough",
+        "city",
+        "city_district",
+        "county",
+        "district",
+        "hamlet",
+        "isolated_dwelling",
+        "municipality",
+        "neighbourhood",
+        "province",
+        "quarter",
+        "region",
+        "settlement",
+        "state",
+        "suburb",
+        "town",
+        "village",
+    }
+)
 
 
 def _money(value: Decimal) -> Decimal:
@@ -75,8 +101,9 @@ def _build_geocoder_queries(address: str) -> list[str]:
     lowered = normalized_address.casefold()
 
     queries = [normalized_address]
-    if not any(token in lowered for token in ("майкоп", "maikop", "адыге", "adyg")):
-        queries.insert(0, f"{settings.DELIVERY_ORIGIN_NAME}, {normalized_address}")
+    origin_name = settings.DELIVERY_ORIGIN_NAME.strip()
+    if origin_name and origin_name.casefold() not in lowered:
+        queries.append(f"{origin_name}, {normalized_address}")
 
     return list(dict.fromkeys(query for query in queries if query))
 
@@ -92,7 +119,22 @@ def _parse_geocoder_result(raw_point: dict, fallback_address: str) -> GeoPoint |
     if not display_name:
         return None
 
-    return GeoPoint(display_name=display_name, lat=lat, lon=lon)
+    try:
+        importance = float(raw_point.get("importance") or 0.0)
+    except (TypeError, ValueError):
+        importance = 0.0
+
+    addresstype = raw_point.get("addresstype")
+    if addresstype is not None:
+        addresstype = str(addresstype).strip() or None
+
+    return GeoPoint(
+        display_name=display_name,
+        lat=lat,
+        lon=lon,
+        importance=importance,
+        addresstype=addresstype,
+    )
 
 
 def _dedupe_points(points: list[GeoPoint]) -> list[GeoPoint]:
@@ -123,6 +165,37 @@ def _split_display_name(display_name: str) -> tuple[str, str | None]:
     title = parts[0]
     subtitle = ", ".join(parts[1:]) or None
     return title, subtitle
+
+
+def _normalize_geocoder_text(value: str) -> str:
+    return " ".join(re.sub(r"[^\w\s]+", " ", value.casefold()).split())
+
+
+def _score_geocoder_point(point: GeoPoint, query: str) -> tuple[int, int, int, int, float, int]:
+    title, _ = _split_display_name(point.display_name)
+    normalized_query = _normalize_geocoder_text(query)
+    normalized_title = _normalize_geocoder_text(title)
+    normalized_display_name = _normalize_geocoder_text(point.display_name)
+
+    exact_title_match = int(bool(normalized_query) and normalized_title == normalized_query)
+    locality_match = int((point.addresstype or "").casefold() in _LOCALITY_ADDRESS_TYPES)
+    title_prefix_match = int(bool(normalized_query) and normalized_title.startswith(normalized_query))
+    display_prefix_match = int(
+        bool(normalized_query) and normalized_display_name.startswith(normalized_query)
+    )
+
+    return (
+        exact_title_match,
+        locality_match,
+        title_prefix_match,
+        display_prefix_match,
+        point.importance,
+        -abs(len(normalized_title) - len(normalized_query)),
+    )
+
+
+def _sort_geocoder_points(points: list[GeoPoint], query: str) -> list[GeoPoint]:
+    return sorted(points, key=lambda point: _score_geocoder_point(point, query), reverse=True)
 
 
 async def _request_geocoder(address: str, *, bounded: bool, limit: int) -> list[GeoPoint]:
@@ -206,16 +279,41 @@ async def suggest_delivery_addresses(query: str) -> list[dict]:
     cached = _GEOCODER_SUGGEST_CACHE.get(cache_key)
 
     if cached is None:
-        points: list[GeoPoint] = []
+        # Suggestions should search across Russia first so city queries like
+        # "Краснодар" are not trapped inside the local delivery-radius box.
+        points = await _request_geocoder(normalized_query, bounded=False, limit=_SUGGESTION_LIMIT)
+        deduped_points = _dedupe_points(points)
 
-        for search_query in _build_geocoder_queries(normalized_query):
-            points.extend(await _request_geocoder(search_query, bounded=True, limit=5))
-
-        if len(points) < 5:
+        if len(deduped_points) < _SUGGESTION_LIMIT:
             for search_query in _build_geocoder_queries(normalized_query):
-                points.extend(await _request_geocoder(search_query, bounded=False, limit=5))
+                if search_query == normalized_query:
+                    continue
 
-        cached = _dedupe_points(points)[:5]
+                points.extend(
+                    await _request_geocoder(
+                        search_query,
+                        bounded=False,
+                        limit=_SUGGESTION_LIMIT,
+                    )
+                )
+                deduped_points = _dedupe_points(points)
+                if len(deduped_points) >= _SUGGESTION_LIMIT:
+                    break
+
+        if len(deduped_points) < _SUGGESTION_LIMIT:
+            for search_query in _build_geocoder_queries(normalized_query):
+                points.extend(
+                    await _request_geocoder(
+                        search_query,
+                        bounded=True,
+                        limit=_SUGGESTION_LIMIT,
+                    )
+                )
+                deduped_points = _dedupe_points(points)
+                if len(deduped_points) >= _SUGGESTION_LIMIT:
+                    break
+
+        cached = _sort_geocoder_points(deduped_points, normalized_query)[:_SUGGESTION_LIMIT]
         _GEOCODER_SUGGEST_CACHE[cache_key] = cached
 
     suggestions: list[dict] = []

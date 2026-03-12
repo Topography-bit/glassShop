@@ -130,3 +130,17 @@ export interface DeliverySuggestion {
   lat: number;
   lon: number;
 }
+
+export interface PaymentOrder {
+  order_id: number;
+  provider: string;
+  status: string;
+  payment_status: string;
+  currency: string;
+  subtotal_price: MoneyValue;
+  delivery_price: MoneyValue;
+  total_price: MoneyValue;
+  confirmation_url: string | null;
+  paid_at: string | null;
+  message: string;
+}

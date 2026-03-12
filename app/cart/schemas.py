@@ -2,7 +2,7 @@ from decimal import Decimal
 from typing import Annotated
 from pydantic import BaseModel, ConfigDict, Field
 
-width_len = Annotated[int | None, Field(default=None, ge=100)]
+width_len = Annotated[int | None, Field(default=None, ge=0)]
 
 
 class SCartAdd(BaseModel):

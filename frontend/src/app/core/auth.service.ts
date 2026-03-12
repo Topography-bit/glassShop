@@ -1,6 +1,6 @@
 import { HttpClient, HttpContext } from '@angular/common/http';
 import { Injectable, inject, signal } from '@angular/core';
-import { firstValueFrom, Observable } from 'rxjs';
+import { finalize, firstValueFrom, Observable, shareReplay } from 'rxjs';
 
 import { SKIP_AUTH_REFRESH } from './auth.interceptor';
 import { AuthCredentials, AuthMessage, User } from './models';
@@ -17,6 +17,7 @@ export class AuthService {
   readonly pendingEmail = signal(localStorage.getItem(pendingEmailKey) ?? '');
   private readonly isBootstrapped = signal(false);
   private profileRequest: Promise<User | null> | null = null;
+  private refreshRequest: Observable<unknown> | null = null;
 
   bootstrap(): void {
     if (this.isBootstrapped()) {
@@ -94,13 +95,24 @@ export class AuthService {
   }
 
   refreshSession(): Observable<unknown> {
-    return this.http.post(
+    if (this.refreshRequest) {
+      return this.refreshRequest;
+    }
+
+    this.refreshRequest = this.http.post(
       '/auth/refresh',
       {},
       {
         context: new HttpContext().set(SKIP_AUTH_REFRESH, true)
       }
+    ).pipe(
+      shareReplay(1),
+      finalize(() => {
+        this.refreshRequest = null;
+      })
     );
+
+    return this.refreshRequest;
   }
 
   setPendingEmail(email: string): void {
@@ -116,6 +128,7 @@ export class AuthService {
   }
 
   clearSession(): void {
+    this.refreshRequest = null;
     this.user.set(null);
   }
 }

@@ -63,7 +63,12 @@
             <article class="account-page__item">
               <div>
                 <h3>{{ productName(item.product_id) }}</h3>
-                <p>{{ item.width_mm }} × {{ item.length_mm }} мм · {{ item.quantity }} шт.</p>
+                <p>
+                  @if ((item.width_mm ?? 0) > 0 && (item.length_mm ?? 0) > 0) {
+                    <span>{{ item.width_mm }} × {{ item.length_mm }} мм · </span>
+                  }
+                  <span>{{ item.quantity }} шт.</span>
+                </p>
               </div>
               <strong>{{ formatPrice(item.current_price) }}</strong>
             </article>

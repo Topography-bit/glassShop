@@ -37,23 +37,30 @@ async def products_cart(data: SCartAdd, user=Depends(get_current_user)) -> dict:
     if not product or not product.is_active:
         raise HTTPException(status_code=404, detail="Такого товара нет в наличии")
 
-    if (
-        data.width_mm is None
-        or data.length_mm is None
-        or product.min_width is None
-        or product.max_width is None
-        or product.min_length is None
-        or product.max_length is None
-    ):
-        raise HTTPException(status_code=400, detail="Для этого товара онлайн-расчет пока недоступен")
+    has_dimension_format = (
+        product.min_width is not None
+        and product.max_width is not None
+        and product.min_length is not None
+        and product.max_length is not None
+    )
 
-    if (
-        data.width_mm > product.max_width
-        or data.width_mm < product.min_width
-        or data.length_mm > product.max_length
-        or data.length_mm < product.min_length
-    ):
-        raise HTTPException(status_code=400, detail="Недопустимые длина или ширина")
+    if has_dimension_format:
+        if data.width_mm is None or data.length_mm is None:
+            raise HTTPException(status_code=400, detail="Укажите длину и ширину")
+
+        if (
+            data.width_mm > product.max_width
+            or data.width_mm < product.min_width
+            or data.length_mm > product.max_length
+            or data.length_mm < product.min_length
+        ):
+            raise HTTPException(status_code=400, detail="Недопустимые длина или ширина")
+
+        cart_width_mm = data.width_mm
+        cart_length_mm = data.length_mm
+    else:
+        cart_width_mm = 0
+        cart_length_mm = 0
 
     if product.thickness_mm is not None:
         edge_price, facet_price, tempering_price = await check_edge_facet_tempering(
@@ -66,8 +73,8 @@ async def products_cart(data: SCartAdd, user=Depends(get_current_user)) -> dict:
     existing = await CartsDAO.find_one_or_none(
         user_id=user.id,
         product_id=data.product_id,
-        width_mm=data.width_mm,
-        length_mm=data.length_mm,
+        width_mm=cart_width_mm,
+        length_mm=cart_length_mm,
         edge_id=data.edge_id,
         facet_id=data.facet_id,
         tempering_id=data.tempering_id,
@@ -77,8 +84,8 @@ async def products_cart(data: SCartAdd, user=Depends(get_current_user)) -> dict:
         new_qty = existing.quantity + data.qty
         new_price = calc_price(
             product_price=product.price_per_m2,
-            width_mm=data.width_mm,
-            length_mm=data.length_mm,
+            width_mm=cart_width_mm,
+            length_mm=cart_length_mm,
             edge_price=edge_price,
             facet_price=facet_price,
             tempering_price=tempering_price,
@@ -88,8 +95,8 @@ async def products_cart(data: SCartAdd, user=Depends(get_current_user)) -> dict:
 
     price = calc_price(
         product_price=product.price_per_m2,
-        width_mm=data.width_mm,
-        length_mm=data.length_mm,
+        width_mm=cart_width_mm,
+        length_mm=cart_length_mm,
         edge_price=edge_price,
         tempering_price=tempering_price,
         facet_price=facet_price,
@@ -99,8 +106,8 @@ async def products_cart(data: SCartAdd, user=Depends(get_current_user)) -> dict:
     return await CartsDAO.add_and_return(
         user_id=user.id,
         product_id=product.id,
-        width_mm=data.width_mm,
-        length_mm=data.length_mm,
+        width_mm=cart_width_mm,
+        length_mm=cart_length_mm,
         quantity=data.qty,
         price=price,
         edge_id=data.edge_id,

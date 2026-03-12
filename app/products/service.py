@@ -6,8 +6,12 @@ from app.database import new_session
 from app.products.models import EdgeProcessingPrice, FacetPrice, TemperingPrice
 
 
-def calc_price(*, product_price: Decimal, width_mm: int, length_mm: int, qty: int, 
+def calc_price(*, product_price: Decimal, width_mm: int | None, length_mm: int | None, qty: int, 
         edge_price: Decimal, tempering_price: Decimal, facet_price: Decimal) -> Decimal:
+
+    if width_mm is None or length_mm is None or width_mm <= 0 or length_mm <= 0:
+        unit_price = product_price + edge_price + tempering_price + facet_price
+        return unit_price * Decimal(str(qty))
 
     price = ((Decimal(width_mm * length_mm) / Decimal("1000000")) * product_price \
     + edge_price + tempering_price + facet_price) * Decimal(str(qty))

@@ -15,6 +15,17 @@ SECRET_KEY = settings.SECRET_KEY
 ALGORITHM = settings.ALGORITHM
 
 
+def auth_cookie_kwargs(*, max_age: int) -> dict:
+    return {
+        "httponly": True,
+        "max_age": max_age,
+        "secure": settings.COOKIE_SECURE,
+        "samesite": settings.COOKIE_SAMESITE,
+        "domain": settings.COOKIE_DOMAIN,
+        "path": "/",
+    }
+
+
 def hash_password(password: str) -> str:
     return pwd_context.hash(password)
 
@@ -44,8 +55,28 @@ def set_cookies(response, user_id: int) -> None:
     access_token = create_access_token({"sub": str(user_id)})
     refresh_token = create_refresh_token({"sub": str(user_id)})
 
-    response.set_cookie(key="access", value=access_token, httponly=True, max_age=ACCESS_TOKEN_EXPIRE*60)
-    response.set_cookie(key="refresh", value=refresh_token, httponly=True, max_age=REFRESH_TOKEN_EXPIRE*24*60*60)
+    response.set_cookie(
+        key="access",
+        value=access_token,
+        **auth_cookie_kwargs(max_age=ACCESS_TOKEN_EXPIRE * 60),
+    )
+    response.set_cookie(
+        key="refresh",
+        value=refresh_token,
+        **auth_cookie_kwargs(max_age=REFRESH_TOKEN_EXPIRE * 24 * 60 * 60),
+    )
+
+
+def clear_auth_cookies(response) -> None:
+    cookie_kwargs = {
+        "path": "/",
+        "secure": settings.COOKIE_SECURE,
+        "httponly": True,
+        "samesite": settings.COOKIE_SAMESITE,
+        "domain": settings.COOKIE_DOMAIN,
+    }
+    response.delete_cookie("access", **cookie_kwargs)
+    response.delete_cookie("refresh", **cookie_kwargs)
 
 
 def generate_code():

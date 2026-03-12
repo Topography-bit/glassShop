@@ -99,6 +99,7 @@
 
 .account-page__item p {
   margin: 0.3rem 0 0;
+  overflow-wrap: anywhere;
 }
 
 .account-page__more {
@@ -106,6 +107,10 @@
 }
 
 @media (max-width: 860px) {
+  .account-page {
+    padding: 1rem 0 1.5rem;
+  }
+
   .account-page__grid,
   .account-card__facts {
     grid-template-columns: 1fr;
@@ -119,5 +124,26 @@
 
   .account-page__summary {
     text-align: left;
+  }
+
+  .account-card__actions {
+    display: grid;
+  }
+}
+
+@media (max-width: 560px) {
+  .account-page__hero,
+  .account-card {
+    padding: 1rem;
+  }
+
+  .account-page__hero h1,
+  .account-card h2 {
+    font-size: clamp(1.55rem, 7vw, 2rem);
+    line-height: 1;
+  }
+
+  .account-page__item {
+    padding: 0.85rem;
   }
 }

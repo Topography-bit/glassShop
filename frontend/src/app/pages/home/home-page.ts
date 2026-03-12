@@ -165,6 +165,17 @@ export class HomePageComponent implements AfterViewInit {
   protected readonly heroScrollProgress = signal(0);
   protected readonly previewViewport = signal({ width: 0, height: 0 });
   protected readonly steps = CONFIG_STEPS;
+  protected readonly visibleSteps = computed(() => {
+    const config = this.shop.selectedConfig();
+
+    if (this.canQuickAddWithoutFormat(config)) {
+      return [];
+    }
+
+    return this.hasDimensionFormat(this.selectedProduct())
+      ? this.steps
+      : this.steps.filter((step) => step.id !== 1);
+  });
   protected readonly catalogSkeletons = CATALOG_SKELETONS;
   protected readonly tabSkeletons = TAB_SKELETONS;
   protected readonly cartSkeletons = CART_SKELETONS;
@@ -287,6 +298,10 @@ export class HomePageComponent implements AfterViewInit {
     return parts.length ? parts : ['Без дополнительных опций'];
   });
   protected readonly isSizeStepValid = computed(() => {
+    if (!this.hasDimensionFormat(this.selectedProduct())) {
+      return true;
+    }
+
     const values = this.form();
     return values.widthMm != null && values.lengthMm != null && !this.dimensionsWarning();
   });
@@ -353,7 +368,7 @@ export class HomePageComponent implements AfterViewInit {
     effect(
       () => {
         this.form.set(createDefaultForm(this.shop.selectedConfig()));
-        this.activeStep.set(1);
+        this.activeStep.set(this.firstAvailableStep());
       },
       { allowSignalWrites: true }
     );
@@ -471,7 +486,7 @@ export class HomePageComponent implements AfterViewInit {
   }
 
   protected nextStep(): void {
-    if (this.activeStep() === 1 && !this.isSizeStepValid()) {
+    if (this.activeStep() === 1 && this.hasDimensionFormat() && !this.isSizeStepValid()) {
       return;
     }
 
@@ -479,14 +494,30 @@ export class HomePageComponent implements AfterViewInit {
   }
 
   protected previousStep(): void {
-    this.activeStep.update((value) => Math.max(value - 1, 1));
+    this.activeStep.update((value) => Math.max(value - 1, this.firstAvailableStep()));
   }
 
   protected canOpenStep(stepId: number): boolean {
+    if (this.canQuickAddWithoutFormat()) {
+      return stepId === 3;
+    }
+
+    if (!this.hasDimensionFormat()) {
+      return stepId === 2 || (stepId === 3 && this.activeStep() >= 2);
+    }
+
     return stepId === 1 || this.isSizeStepValid();
   }
 
   protected isStepComplete(stepId: number): boolean {
+    if (this.canQuickAddWithoutFormat()) {
+      return false;
+    }
+
+    if (!this.hasDimensionFormat()) {
+      return stepId === 2 ? this.activeStep() > 2 : false;
+    }
+
     if (stepId === 1) {
       return this.isSizeStepValid();
     }
@@ -499,7 +530,18 @@ export class HomePageComponent implements AfterViewInit {
   }
 
   protected materialAtmosphere(product: Product | null): string {
-    return this.productRangeCompact(product) ?? 'Размеры уточняются';
+    return this.productRangeCompact(product) ?? '';
+  }
+
+  protected materialMeta(product: Product | null): string {
+    const parts = [this.materialTone(product)];
+    const atmosphere = this.materialAtmosphere(product);
+
+    if (atmosphere) {
+      parts.push(atmosphere);
+    }
+
+    return parts.join(' • ');
   }
 
   protected productPhotoUrl(product: Product | null): string | null {
@@ -632,40 +674,6 @@ export class HomePageComponent implements AfterViewInit {
     return id == null ? '' : String(id);
   }
 
-  protected edgeSelectionSummary(): string {
-    const edge = this.selectedEdge();
-
-    if (edge == null) {
-      return 'Чистый край без дополнительной обработки.';
-    }
-
-    const thickness = edge.thickness_mm != null ? `${edge.thickness_mm} мм` : 'под выбранное полотно';
-    return `${formatEdgeLabel(edge)} · ${thickness} · ${formatPrice(edge.price)}`;
-  }
-
-  protected facetSelectionSummary(): string {
-    const facet = this.selectedFacet();
-
-    if (facet == null) {
-      return 'Без фацета, чтобы оставить плоскость максимально спокойной.';
-    }
-
-    const geometry = facet.shape === 'curved' ? 'мягкая форма' : 'прямая линия';
-    return `${formatFacetLabel(facet)} · ${geometry} · ${formatPrice(facet.price)}`;
-  }
-
-  protected temperingSelectionSummary(): string {
-    const tempering = this.selectedTempering();
-
-    if (tempering == null) {
-      return 'Базовое исполнение без закалки.';
-    }
-
-    const thickness =
-      tempering.thickness_mm != null ? `${tempering.thickness_mm} мм` : 'по выбранному формату';
-    return `${formatTemperingLabel(tempering)} · ${thickness} · ${formatPrice(tempering.price)}`;
-  }
-
   protected async addToCart(): Promise<void> {
     const config = this.shop.selectedConfig();
     const currentUser = this.user();
@@ -676,18 +684,6 @@ export class HomePageComponent implements AfterViewInit {
 
     if (currentUser == null) {
       await this.router.navigate(['/login'], { queryParams: { next: '/' } });
-      return;
-    }
-
-    if (
-      config.product.min_width == null ||
-      config.product.min_length == null ||
-      config.product.max_width == null ||
-      config.product.max_length == null
-    ) {
-      this.shop.actionMessage.set(
-        'Для этого материала лучше оставить запрос менеджеру. Онлайн-калькулятор по нему пока не включен.'
-      );
       return;
     }
 
@@ -801,7 +797,7 @@ export class HomePageComponent implements AfterViewInit {
       product.max_width == null ||
       product.max_length == null
     ) {
-      return 'Размеры по этому материалу лучше уточнить вручную.';
+      return '';
     }
 
     return `От ${product.min_width}×${product.min_length} до ${product.max_width}×${product.max_length} мм`;
@@ -828,6 +824,34 @@ export class HomePageComponent implements AfterViewInit {
     }
 
     return null;
+  }
+
+  private firstAvailableStep(): number {
+    if (this.canQuickAddWithoutFormat(this.shop.selectedConfig())) {
+      return 3;
+    }
+
+    return this.hasDimensionFormat(this.shop.selectedConfig()?.product) ? 1 : 2;
+  }
+
+  protected hasDimensionFormat(product: Product | null | undefined = this.selectedProduct()): boolean {
+    return Boolean(
+      product &&
+        product.min_width != null &&
+        product.min_length != null &&
+        product.max_width != null &&
+        product.max_length != null
+    );
+  }
+
+  protected canQuickAddWithoutFormat(config: ProductConfig | null = this.shop.selectedConfig()): boolean {
+    return Boolean(
+      config &&
+        !this.hasDimensionFormat(config.product) &&
+        config.edges.length === 0 &&
+        config.facets.length === 0 &&
+        config.temperings.length === 0
+    );
   }
 
   private materialTheme(product: Product | null): MaterialTheme {

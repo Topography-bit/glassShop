@@ -2,3 +2,10 @@ venv/
 __pycache__/
 .env
 .npm-cache/
+.pytest_cache/
+*.pyc
+frontend/node_modules/
+frontend/dist/
+frontend/.angular/
+postgres_data/
+media/

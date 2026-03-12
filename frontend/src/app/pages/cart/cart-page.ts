@@ -1,5 +1,5 @@
 import { Component, OnDestroy, effect, inject, signal } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 
 import { AuthService } from '../../core/auth.service';
 import {
@@ -20,7 +20,10 @@ import { ShopStore } from '../../core/shop.store';
 })
 export class CartPageComponent implements OnDestroy {
   private readonly authService = inject(AuthService);
+  private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
   private suggestTimer: ReturnType<typeof setTimeout> | null = null;
+  private processedPaymentOrderId: number | null = null;
 
   protected readonly shop = inject(ShopStore);
   protected readonly user = this.authService.user;
@@ -31,11 +34,13 @@ export class CartPageComponent implements OnDestroy {
     effect(() => {
       if (this.authService.user()) {
         void this.shop.loadCart();
+        void this.handlePaymentReturn();
         return;
       }
 
       this.shop.clearLocalCart();
       this.showSuggestions.set(false);
+      this.processedPaymentOrderId = null;
     });
   }
 
@@ -59,6 +64,14 @@ export class CartPageComponent implements OnDestroy {
 
   protected async clearCart(): Promise<void> {
     await this.shop.clearCart();
+  }
+
+  protected async payWithYooKassa(): Promise<void> {
+    const paymentOrder = await this.shop.startYooKassaCheckout();
+
+    if (paymentOrder?.confirmation_url) {
+      window.location.assign(paymentOrder.confirmation_url);
+    }
   }
 
   protected updateDeliveryAddress(value: string): void {
@@ -91,11 +104,11 @@ export class CartPageComponent implements OnDestroy {
     window.setTimeout(() => this.showSuggestions.set(false), 120);
   }
 
-  protected async selectDeliverySuggestion(
-    suggestion: DeliverySuggestion,
-    event: MouseEvent
-  ): Promise<void> {
+  protected keepSuggestionsOpen(event: MouseEvent): void {
     event.preventDefault();
+  }
+
+  protected async selectDeliverySuggestion(suggestion: DeliverySuggestion): Promise<void> {
     if (this.suggestTimer != null) {
       clearTimeout(this.suggestTimer);
       this.suggestTimer = null;
@@ -140,6 +153,15 @@ export class CartPageComponent implements OnDestroy {
     const cart = this.shop.cart();
     const quote = this.shop.deliveryQuote();
     return Boolean(cart?.can_order && quote?.within_radius);
+  }
+
+  protected paymentStatusIsSuccess(): boolean {
+    return this.shop.latestPaymentOrder()?.status === 'paid';
+  }
+
+  protected paymentStatusIsError(): boolean {
+    const status = this.shop.latestPaymentOrder()?.status;
+    return status === 'canceled' || status === 'failed';
   }
 
   protected productName(productId: number): string {
@@ -200,5 +222,24 @@ export class CartPageComponent implements OnDestroy {
     }
 
     return parts.length ? parts.join(' • ') : 'Без дополнительной обработки';
+  }
+
+  private async handlePaymentReturn(): Promise<void> {
+    const rawOrderId = this.route.snapshot.queryParamMap.get('payment_order_id');
+    const orderId = rawOrderId == null ? Number.NaN : Number(rawOrderId);
+
+    if (!Number.isInteger(orderId) || orderId <= 0 || this.processedPaymentOrderId === orderId) {
+      return;
+    }
+
+    this.processedPaymentOrderId = orderId;
+    await this.shop.loadPaymentOrder(orderId);
+
+    await this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { payment_order_id: null },
+      queryParamsHandling: 'merge',
+      replaceUrl: true,
+    });
   }
 }

@@ -42,7 +42,12 @@
               <div>
                 <h3>{{ productName(item.product_id) }}</h3>
                 <p>{{ productMeta(item.product_id) }}</p>
-                <p>{{ item.width_mm }} × {{ item.length_mm }} мм · {{ cartOptions(item) }}</p>
+                <p>
+                  @if ((item.width_mm ?? 0) > 0 && (item.length_mm ?? 0) > 0) {
+                    <span>{{ item.width_mm }} × {{ item.length_mm }} мм · </span>
+                  }
+                  <span>{{ cartOptions(item) }}</span>
+                </p>
               </div>
               <div class="cart-page__price">
                 <strong>{{ formatPrice(item.current_price) }}</strong>
@@ -101,7 +106,7 @@
               />
 
               @if (showSuggestions() && (shop.deliverySuggestionsLoading() || shop.deliverySuggestions().length || showEmptySuggestionsState())) {
-                <div class="cart-page__suggestions">
+                <div class="cart-page__suggestions" (mousedown)="keepSuggestionsOpen($event)">
                   @if (shop.deliverySuggestionsLoading()) {
                     <div class="cart-page__suggestion-state">Ищу варианты адреса...</div>
                   } @else if (shop.deliverySuggestions().length) {
@@ -109,7 +114,7 @@
                       <button
                         class="cart-page__suggestion"
                         type="button"
-                        (mousedown)="selectDeliverySuggestion(suggestion, $event)"
+                        (click)="selectDeliverySuggestion(suggestion)"
                       >
                         <span class="cart-page__suggestion-main">
                           <strong>{{ suggestion.title }}</strong>
@@ -204,6 +209,39 @@
             Укажи адрес доставки, чтобы проверить километраж и финальную стоимость.
           }
         </p>
+
+        @if (shop.checkoutError()) {
+          <div class="status-banner status-banner_error">{{ shop.checkoutError() }}</div>
+        }
+
+        @if (shop.latestPaymentOrder(); as paymentOrder) {
+          <div
+            class="status-banner"
+            [class.status-banner_success]="paymentStatusIsSuccess()"
+            [class.status-banner_error]="paymentStatusIsError()"
+          >
+            {{ paymentOrder.message }}
+          </div>
+        }
+
+        @if (readyForOrder()) {
+          <div class="cart-page__actions">
+            <button
+              class="solid-button"
+              type="button"
+              [disabled]="shop.checkoutLoading()"
+              (click)="payWithYooKassa()"
+            >
+              {{ shop.checkoutLoading() ? 'Перехожу к оплате...' : 'Оплатить картой или СБП' }}
+            </button>
+
+            @if (shop.latestPaymentOrder()?.status === 'pending' && shop.latestPaymentOrder()?.confirmation_url) {
+              <a class="ghost-button" [href]="shop.latestPaymentOrder()!.confirmation_url">
+                Вернуться к оплате
+              </a>
+            }
+          </div>
+        }
       </div>
     }
   </section>

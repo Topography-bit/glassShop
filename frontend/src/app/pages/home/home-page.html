@@ -147,7 +147,7 @@
               <span class="material-rail__swatch" [style.background]="materialSwatchStyle(product)"></span>
             }
             <span class="material-rail__label">{{ product.name }}</span>
-            <span class="material-rail__meta">{{ materialTone(product) }} · {{ materialAtmosphere(product) }}</span>
+            <span class="material-rail__meta">{{ materialMeta(product) }}</span>
           </button>
         }
       </div>
@@ -195,16 +195,18 @@
                 <strong>{{ formatPrice(product.price_per_m2) }}</strong>
               </div>
 
-              <div class="product-card__range-list">
-                <p class="product-card__range">
-                  {{ formatDimension(product.min_width) }} - {{ formatDimension(product.max_width) }}
-                  по ширине
-                </p>
-                <p class="product-card__range">
-                  {{ formatDimension(product.min_length) }} - {{ formatDimension(product.max_length) }}
-                  по длине
-                </p>
-              </div>
+              @if (hasDimensionFormat(product)) {
+                <div class="product-card__range-list">
+                  <p class="product-card__range">
+                    {{ formatDimension(product.min_width) }} - {{ formatDimension(product.max_width) }}
+                    по ширине
+                  </p>
+                  <p class="product-card__range">
+                    {{ formatDimension(product.min_length) }} - {{ formatDimension(product.max_length) }}
+                    по длине
+                  </p>
+                </div>
+              }
 
               <button class="ghost-button product-card__button" type="button" (click)="chooseProduct(product.id)">
                 Настроить материал
@@ -216,12 +218,30 @@
         <aside class="configurator glass-card" id="configurator">
           @if (shop.selectedConfig(); as config) {
             <div class="configurator__head">
-              <div class="configurator__headline">
-                <span class="configurator__material-swatch" [style.background]="materialSwatchStyle(config.product)"></span>
-                <div>
+              <div
+                class="configurator__headline"
+                [class.configurator__headline_with-photo]="productPhotoUrl(config.product)"
+              >
+                @if (productPhotoUrl(config.product); as productPhoto) {
+                  <div class="configurator__material-media">
+                    <img
+                      class="configurator__material-image"
+                      [src]="productPhoto"
+                      [alt]="config.product.name"
+                    />
+                  </div>
+                } @else {
+                  <span
+                    class="configurator__material-swatch"
+                    [style.background]="materialSwatchStyle(config.product)"
+                  ></span>
+                }
+                <div class="configurator__headline-body">
                   <p class="configurator__eyebrow">Конфигуратор</p>
                   <h3>{{ config.product.name }}</h3>
-                  <p class="configurator__range">{{ productRangeLabel() }}</p>
+                  @if (hasDimensionFormat(config.product)) {
+                    <p class="configurator__range">{{ productRangeLabel() }}</p>
+                  }
                 </div>
               </div>
 
@@ -233,10 +253,14 @@
 
             <div class="configurator__budget" [style.--budget-accent]="materialAccent(config.product)">
               <div class="configurator__budget-main">
-                <span>Онлайн-смета</span>
-                <strong>{{ formatPrice(previewPrice()) }}</strong>
+                <span>{{ hasDimensionFormat(config.product) ? 'Онлайн-смета' : 'Конфигурация' }}</span>
+                <strong>{{ hasDimensionFormat(config.product) ? formatPrice(previewPrice()) : 'Без размеров' }}</strong>
               </div>
-              <p>{{ formatArea(previewArea()) }} · {{ form().qty }} шт · {{ ratioLabel() }}</p>
+              @if (hasDimensionFormat(config.product)) {
+                <p>{{ formatArea(previewArea()) }} · {{ form().qty }} шт · {{ ratioLabel() }}</p>
+              } @else {
+                <p>Для этого материала шаг с выбором ширины и длины скрыт.</p>
+              }
 
               @if (selectedEdge() || selectedFacet() || selectedTempering()) {
                 <div class="configurator__budget-options">
@@ -296,24 +320,28 @@
                   <span class="configurator__mirror-edge"></span>
                   <span class="configurator__mirror-reflection"></span>
                   <span class="configurator__mirror-reflection configurator__mirror-reflection_secondary"></span>
-                  <span class="configurator__dimension configurator__dimension_horizontal">
-                    {{ previewGeometry().width }} mm
-                  </span>
-                  <span class="configurator__dimension configurator__dimension_vertical">
-                    {{ previewGeometry().height }} mm
-                  </span>
+                  @if (hasDimensionFormat(config.product)) {
+                    <span class="configurator__dimension configurator__dimension_horizontal">
+                      {{ previewGeometry().width }} mm
+                    </span>
+                    <span class="configurator__dimension configurator__dimension_vertical">
+                      {{ previewGeometry().height }} mm
+                    </span>
+                  }
                 </div>
 
-                <div class="configurator__preview-meta">
-                  <div>
-                    <span>Формат</span>
-                    <strong>{{ previewGeometry().width }} × {{ previewGeometry().height }} мм</strong>
+                @if (hasDimensionFormat(config.product)) {
+                  <div class="configurator__preview-meta">
+                    <div>
+                      <span>Формат</span>
+                      <strong>{{ previewGeometry().width }} × {{ previewGeometry().height }} мм</strong>
+                    </div>
+                    <div>
+                      <span>Пропорция</span>
+                      <strong>{{ ratioLabel() }}</strong>
+                    </div>
                   </div>
-                  <div>
-                    <span>Пропорция</span>
-                    <strong>{{ ratioLabel() }}</strong>
-                  </div>
-                </div>
+                }
               </div>
 
               <div class="configurator__chips">
@@ -323,24 +351,26 @@
               </div>
             </div>
 
-            <div class="stepper">
-              @for (step of steps; track step.id) {
-                <button
-                  class="stepper__item"
-                  type="button"
-                  [class.stepper__item_active]="activeStep() === step.id"
-                  [class.stepper__item_complete]="isStepComplete(step.id)"
-                  [disabled]="!canOpenStep(step.id)"
-                  (click)="setStep(step.id)"
-                >
-                  <span class="stepper__index">0{{ step.id }}</span>
-                  <span class="stepper__body">
-                    <strong>{{ step.title }}</strong>
-                    <span>{{ step.description }}</span>
-                  </span>
-                </button>
-              }
-            </div>
+            @if (visibleSteps().length) {
+              <div class="stepper">
+                  @for (step of visibleSteps(); track step.id) {
+                    <button
+                      class="stepper__item"
+                    type="button"
+                    [class.stepper__item_active]="activeStep() === step.id"
+                    [class.stepper__item_complete]="isStepComplete(step.id)"
+                    [disabled]="!canOpenStep(step.id)"
+                    (click)="setStep(step.id)"
+                  >
+                    <span class="stepper__index">0{{ step.id }}</span>
+                    <span class="stepper__body">
+                      <strong>{{ step.title }}</strong>
+                      <span>{{ step.description }}</span>
+                    </span>
+                  </button>
+                }
+              </div>
+            }
 
             @if (shop.actionMessage()) {
               <div class="status-banner status-banner_success">{{ shop.actionMessage() }}</div>
@@ -350,7 +380,7 @@
               <div class="status-banner status-banner_error">{{ dimensionsWarning() }}</div>
             }
 
-            @if (activeStep() === 1) {
+            @if (hasDimensionFormat(config.product) && activeStep() === 1) {
               <section class="config-step" [animate.enter]="'enter-rise'">
                 <div class="config-step__header">
                   <div>
@@ -427,133 +457,89 @@
                     <p class="config-step__eyebrow">Шаг 2</p>
                     <h4>Соберите обработку под сценарий использования</h4>
                   </div>
-                  <p>Вместо списка полей вы выбираете характер торца и декоративный акцент как в витрине.</p>
+                  <p>Выберите кромку и фацет в компактных списках, а превью сразу покажет характер обработки.</p>
                 </div>
 
                 <div class="config-select-grid">
-                  <label class="config-select-card">
-                    <span class="config-select-card__label">Кромка</span>
-                    <select
-                      class="select-field config-select-card__control"
-                      [value]="selectedOptionValue(form().edgeId)"
-                      (change)="updateOption('edgeId', $any($event.target).value)"
-                    >
-                      <option value="">Без обработки</option>
-                      @for (edge of config.edges; track edge.id) {
-                        <option [value]="optionValue(edge.id)">
-                          {{ formatEdgeLabel(edge) }} · {{ formatPrice(edge.price) }}
-                        </option>
-                      }
-                    </select>
-                    <small>{{ edgeSelectionSummary() }}</small>
-                  </label>
+                  <div class="option-block">
+                    <div class="option-block__header">
+                      <h5>Кромка</h5>
+                      <p>Как должен читаться торец материала.</p>
+                    </div>
 
-                  <label class="config-select-card">
-                    <span class="config-select-card__label">Фацет</span>
-                    <select
-                      class="select-field config-select-card__control"
-                      [value]="selectedOptionValue(form().facetId)"
-                      (change)="updateOption('facetId', $any($event.target).value)"
-                    >
-                      <option value="">Без фацета</option>
-                      @for (facet of config.facets; track facet.id) {
-                        <option [value]="optionValue(facet.id)">
-                          {{ formatFacetLabel(facet) }} · {{ formatPrice(facet.price) }}
-                        </option>
-                      }
-                    </select>
-                    <small>{{ facetSelectionSummary() }}</small>
-                  </label>
-                </div>
-
-                <div class="option-block">
-                  <div class="option-block__header">
-                    <h5>Кромка</h5>
-                    <p>Как должен читаться торец материала.</p>
-                  </div>
-
-                  <div class="choice-grid">
-                    <button
-                      class="choice-card"
-                      type="button"
-                      [class.choice-card_selected]="form().edgeId == null"
-                      (click)="updateOption('edgeId', '')"
-                    >
-                      <div class="choice-card__head">
-                        <span class="choice-card__swatch" [style.background]="edgeSwatchStyle(null)"></span>
-                        <div>
-                          <span class="choice-card__title">Чистый край</span>
-                          <span class="choice-card__text">{{ edgeOptionText(null) }}</span>
-                        </div>
-                      </div>
-                      <strong>{{ formatPrice(0) }}</strong>
-                    </button>
-
-                    @for (edge of config.edges; track edge.id) {
-                      <button
-                        class="choice-card"
-                        type="button"
-                        [class.choice-card_selected]="form().edgeId === edge.id"
-                        (click)="updateOption('edgeId', optionValue(edge.id))"
+                    <label class="config-select-card">
+                      <span class="config-select-card__label">Выбор из списка</span>
+                      <select
+                        class="select-field config-select-card__control"
+                        [value]="selectedOptionValue(form().edgeId)"
+                        (change)="updateOption('edgeId', $any($event.target).value)"
                       >
-                        <div class="choice-card__head">
-                          <span class="choice-card__swatch" [style.background]="edgeSwatchStyle(edge)"></span>
-                          <div>
-                            <span class="choice-card__title">{{ formatEdgeLabel(edge) }}</span>
-                            <span class="choice-card__text">{{ edgeOptionText(edge) }}</span>
-                          </div>
-                        </div>
-                        <strong>{{ formatPrice(edge.price) }}</strong>
-                      </button>
-                    }
-                  </div>
-                </div>
+                        <option value="">Чистый край · {{ formatPrice(0) }}</option>
+                        @for (edge of config.edges; track edge.id) {
+                          <option [value]="optionValue(edge.id)">
+                            {{ formatEdgeLabel(edge) }} · {{ formatPrice(edge.price) }}
+                          </option>
+                        }
+                      </select>
 
-                <div class="option-block">
-                  <div class="option-block__header">
-                    <h5>Фацет</h5>
-                    <p>Декоративная геометрия для более глубокого светового рисунка.</p>
-                  </div>
-
-                  <div class="choice-grid">
-                    <button
-                      class="choice-card"
-                      type="button"
-                      [class.choice-card_selected]="form().facetId == null"
-                      (click)="updateOption('facetId', '')"
-                    >
-                      <div class="choice-card__head">
-                        <span class="choice-card__swatch" [style.background]="facetSwatchStyle(null)"></span>
-                        <div>
-                          <span class="choice-card__title">Без фацета</span>
-                          <span class="choice-card__text">{{ facetOptionText(null) }}</span>
+                      <div class="config-select-card__preview">
+                        <span class="config-select-card__swatch" [style.background]="edgeSwatchStyle(selectedEdge())"></span>
+                        <div class="config-select-card__body">
+                          @if (selectedEdge(); as edge) {
+                            <strong>{{ formatEdgeLabel(edge) }}</strong>
+                            <span>{{ edgeOptionText(edge) }}</span>
+                          } @else {
+                            <strong>Чистый край</strong>
+                            <span>{{ edgeOptionText(null) }}</span>
+                          }
                         </div>
+                        <strong class="config-select-card__price">{{ formatPrice(selectedEdge()?.price ?? 0) }}</strong>
                       </div>
-                      <strong>{{ formatPrice(0) }}</strong>
-                    </button>
+                    </label>
+                  </div>
 
-                    @for (facet of config.facets; track facet.id) {
-                      <button
-                        class="choice-card"
-                        type="button"
-                        [class.choice-card_selected]="form().facetId === facet.id"
-                        (click)="updateOption('facetId', optionValue(facet.id))"
+                  <div class="option-block">
+                    <div class="option-block__header">
+                      <h5>Фацет</h5>
+                      <p>Декоративная геометрия для более глубокого светового рисунка.</p>
+                    </div>
+
+                    <label class="config-select-card">
+                      <span class="config-select-card__label">Выбор из списка</span>
+                      <select
+                        class="select-field config-select-card__control"
+                        [value]="selectedOptionValue(form().facetId)"
+                        (change)="updateOption('facetId', $any($event.target).value)"
                       >
-                        <div class="choice-card__head">
-                          <span class="choice-card__swatch" [style.background]="facetSwatchStyle(facet)"></span>
-                          <div>
-                            <span class="choice-card__title">{{ formatFacetLabel(facet) }}</span>
-                            <span class="choice-card__text">{{ facetOptionText(facet) }}</span>
-                          </div>
+                        <option value="">Без фацета · {{ formatPrice(0) }}</option>
+                        @for (facet of config.facets; track facet.id) {
+                          <option [value]="optionValue(facet.id)">
+                            {{ formatFacetLabel(facet) }} · {{ formatPrice(facet.price) }}
+                          </option>
+                        }
+                      </select>
+
+                      <div class="config-select-card__preview">
+                        <span class="config-select-card__swatch" [style.background]="facetSwatchStyle(selectedFacet())"></span>
+                        <div class="config-select-card__body">
+                          @if (selectedFacet(); as facet) {
+                            <strong>{{ formatFacetLabel(facet) }}</strong>
+                            <span>{{ facetOptionText(facet) }}</span>
+                          } @else {
+                            <strong>Без фацета</strong>
+                            <span>{{ facetOptionText(null) }}</span>
+                          }
                         </div>
-                        <strong>{{ formatPrice(facet.price) }}</strong>
-                      </button>
-                    }
+                        <strong class="config-select-card__price">{{ formatPrice(selectedFacet()?.price ?? 0) }}</strong>
+                      </div>
+                    </label>
                   </div>
                 </div>
 
                 <div class="config-step__footer">
-                  <button class="ghost-button" type="button" (click)="previousStep()">Назад</button>
+                  @if (hasDimensionFormat(config.product)) {
+                    <button class="ghost-button" type="button" (click)="previousStep()">Назад</button>
+                  }
                   <button class="solid-button" type="button" (click)="nextStep()">Перейти к финалу</button>
                 </div>
               </section>
@@ -563,73 +549,59 @@
               <section class="config-step" [animate.enter]="'enter-rise'">
                 <div class="config-step__header">
                   <div>
-                    <p class="config-step__eyebrow">Шаг 3</p>
-                    <h4>Финальная настройка и стоимость</h4>
+                    <p class="config-step__eyebrow">{{ canQuickAddWithoutFormat(config) ? 'Количество' : 'Шаг 3' }}</p>
+                    <h4>{{ canQuickAddWithoutFormat(config) ? 'Количество и корзина' : 'Финальная настройка и стоимость' }}</h4>
                   </div>
-                  <p>Осталось определить закалку, количество и сохранить позицию в корзину.</p>
+                  <p>
+                    {{
+                      canQuickAddWithoutFormat(config)
+                        ? 'Для этой позиции можно сразу выбрать количество и добавить её в корзину.'
+                        : 'Осталось определить закалку, количество и сохранить позицию в корзину.'
+                    }}
+                  </p>
                 </div>
 
-                <div class="option-block">
-                  <div class="option-block__header">
-                    <h5>Закалка</h5>
-                    <p>Подходит, если нужна дополнительная надежность для активного сценария использования.</p>
-                  </div>
+                @if (config.temperings.length) {
+                  <div class="option-block">
+                    <div class="option-block__header">
+                      <h5>Закалка</h5>
+                      <p>Подходит, если нужна дополнительная надежность для активного сценария использования.</p>
+                    </div>
 
-                  <div class="choice-grid">
-                    <button
-                      class="choice-card"
-                      type="button"
-                      [class.choice-card_selected]="form().temperingId == null"
-                      (click)="updateOption('temperingId', '')"
-                    >
-                      <div class="choice-card__head">
-                        <span class="choice-card__swatch" [style.background]="temperingSwatchStyle(null)"></span>
-                        <div>
-                          <span class="choice-card__title">Без закалки</span>
-                          <span class="choice-card__text">{{ temperingOptionText(null) }}</span>
-                        </div>
-                      </div>
-                      <strong>{{ formatPrice(0) }}</strong>
-                    </button>
-
-                    @for (tempering of config.temperings; track tempering.id) {
-                      <button
-                        class="choice-card"
-                        type="button"
-                        [class.choice-card_selected]="form().temperingId === tempering.id"
-                        (click)="updateOption('temperingId', optionValue(tempering.id))"
+                    <label class="config-select-card">
+                      <span class="config-select-card__label">Закалка</span>
+                      <select
+                        class="select-field config-select-card__control"
+                        [value]="selectedOptionValue(form().temperingId)"
+                        (change)="updateOption('temperingId', $any($event.target).value)"
                       >
-                        <div class="choice-card__head">
-                          <span class="choice-card__swatch" [style.background]="temperingSwatchStyle(tempering)"></span>
-                          <div>
-                            <span class="choice-card__title">{{ formatTemperingLabel(tempering) }}</span>
-                            <span class="choice-card__text">{{ temperingOptionText(tempering) }}</span>
-                          </div>
-                        </div>
-                        <strong>{{ formatPrice(tempering.price) }}</strong>
-                      </button>
-                    }
-                  </div>
-                </div>
+                        <option value="">Без закалки · {{ formatPrice(0) }}</option>
+                        @for (tempering of config.temperings; track tempering.id) {
+                          <option [value]="optionValue(tempering.id)">
+                            {{ formatTemperingLabel(tempering) }} · {{ formatPrice(tempering.price) }}
+                          </option>
+                        }
+                      </select>
 
-                <div class="config-select-grid">
-                  <label class="config-select-card config-select-card_full">
-                    <span class="config-select-card__label">Закалка</span>
-                    <select
-                      class="select-field config-select-card__control"
-                      [value]="selectedOptionValue(form().temperingId)"
-                      (change)="updateOption('temperingId', $any($event.target).value)"
-                    >
-                      <option value="">Без закалки</option>
-                      @for (tempering of config.temperings; track tempering.id) {
-                        <option [value]="optionValue(tempering.id)">
-                          {{ formatTemperingLabel(tempering) }} · {{ formatPrice(tempering.price) }}
-                        </option>
-                      }
-                    </select>
-                    <small>{{ temperingSelectionSummary() }}</small>
-                  </label>
-                </div>
+                      <div class="config-select-card__preview">
+                        <span
+                          class="config-select-card__swatch"
+                          [style.background]="temperingSwatchStyle(selectedTempering())"
+                        ></span>
+                        <div class="config-select-card__body">
+                          @if (selectedTempering(); as tempering) {
+                            <strong>{{ formatTemperingLabel(tempering) }}</strong>
+                            <span>{{ temperingOptionText(tempering) }}</span>
+                          } @else {
+                            <strong>Без закалки</strong>
+                            <span>{{ temperingOptionText(null) }}</span>
+                          }
+                        </div>
+                        <strong class="config-select-card__price">{{ formatPrice(selectedTempering()?.price ?? 0) }}</strong>
+                      </div>
+                    </label>
+                  </div>
+                }
 
                 <div class="final-grid">
                   <div class="final-card final-card_qty">
@@ -648,39 +620,49 @@
                     </div>
                   </div>
 
-                  <div class="final-card">
-                    <span class="final-card__label">Цена за изделие</span>
-                    <strong>{{ formatPrice(pricePerPiece()) }}</strong>
-                  </div>
+                  @if (hasDimensionFormat(config.product)) {
+                    <div class="final-card">
+                      <span class="final-card__label">Цена за изделие</span>
+                      <strong>{{ formatPrice(pricePerPiece()) }}</strong>
+                    </div>
+                  }
                 </div>
 
-                <div class="configurator__summary">
-                  <div>
-                    <span>Площадь</span>
-                    <strong>{{ formatArea(previewArea()) }}</strong>
+                @if (hasDimensionFormat(config.product)) {
+                  <div class="configurator__summary">
+                    <div>
+                      <span>Площадь</span>
+                      <strong>{{ formatArea(previewArea()) }}</strong>
+                    </div>
+                    <div>
+                      <span>Количество</span>
+                      <strong>{{ form().qty }} шт</strong>
+                    </div>
+                    <div>
+                      <span>Предварительная сумма</span>
+                      <strong>{{ formatPrice(previewPrice()) }}</strong>
+                    </div>
                   </div>
-                  <div>
-                    <span>Количество</span>
-                    <strong>{{ form().qty }} шт</strong>
-                  </div>
-                  <div>
-                    <span>Предварительная сумма</span>
-                    <strong>{{ formatPrice(previewPrice()) }}</strong>
-                  </div>
-                </div>
+                }
 
                 <div class="configurator__actions">
-                  <button class="solid-button" type="button" (click)="addToCart()">Добавить в корзину</button>
+                  @if (hasDimensionFormat(config.product) || canQuickAddWithoutFormat(config)) {
+                    <button class="solid-button" type="button" (click)="addToCart()">Добавить в корзину</button>
+                  } @else {
+                    <button class="solid-button" type="button" (click)="scrollTo('contacts')">Связаться с менеджером</button>
+                  }
                   <button class="ghost-button" type="button" (click)="scrollTo('contacts')">Нужна помощь менеджера</button>
                 </div>
 
-                @if (!user()) {
+                @if (!user() && hasDimensionFormat(config.product)) {
                   <p class="configurator__login-note">Для сохранения позиции потребуется вход в аккаунт.</p>
                 }
 
-                <div class="config-step__footer config-step__footer_back">
-                  <button class="ghost-button" type="button" (click)="previousStep()">Вернуться к обработке</button>
-                </div>
+                @if (!canQuickAddWithoutFormat(config)) {
+                  <div class="config-step__footer config-step__footer_back">
+                    <button class="ghost-button" type="button" (click)="previousStep()">Вернуться к обработке</button>
+                  </div>
+                }
               </section>
             }
 
@@ -755,7 +737,12 @@
                 <div>
                   <h3>{{ productName(item.product_id) }}</h3>
                   <p>{{ productMeta(item.product_id) }}</p>
-                  <p>{{ item.width_mm }} × {{ item.length_mm }} мм · {{ cartOptions(item) }}</p>
+                  <p>
+                    @if ((item.width_mm ?? 0) > 0 && (item.length_mm ?? 0) > 0) {
+                      <span>{{ item.width_mm }} × {{ item.length_mm }} мм · </span>
+                    }
+                    <span>{{ cartOptions(item) }}</span>
+                  </p>
                 </div>
 
                 <div class="cart-item__price">

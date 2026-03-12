@@ -1,0 +1,16 @@
+.git
+.gitignore
+venv
+__pycache__
+*.pyc
+*.pyo
+.env
+.npm-cache
+frontend/node_modules
+frontend/dist
+frontend/.angular
+postgres_data
+media
+**/__pycache__
+**/*.pyc
+**/*.pyo

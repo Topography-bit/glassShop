@@ -20,7 +20,7 @@ router = APIRouter(prefix="/admin", tags=["Admin"], dependencies=[Depends(user_i
 @router.post("/add_all_products")
 async def add_all_products(file: UploadFile = File(...)):
     if not file.filename.endswith(".xlsx"):
-        raise HTTPException(status_code=400, detail="РќСѓР¶РµРЅ .xlsx С„Р°Р№Р»")
+        raise HTTPException(status_code=400, detail="Нужен .xlsx файл")
 
     read_bytes = await file.read()
     categories = parse_categories_of_products(read_bytes)
@@ -55,6 +55,9 @@ async def add_all_products(file: UploadFile = File(...)):
                     )
 
                     if existing_product is not None:
+                        if product_data.get("image_url") is None:
+                            product_data.pop("image_url", None)
+
                         await ProductsDAO.update(
                             {"id": existing_product.id},
                             session=session,
@@ -66,9 +69,9 @@ async def add_all_products(file: UploadFile = File(...)):
         except HTTPException:
             raise
         except Exception:
-            raise HTTPException(status_code=500, detail="РћС€РёР±РєР° СЃРµСЂРІРµСЂР°")
+            raise HTTPException(status_code=500, detail="Ошибка сервера")
 
-    return {"message": "Р’СЃРµ С‚РѕРІР°СЂС‹ СѓСЃРїРµС€РЅРѕ РґРѕР±Р°РІР»РµРЅС‹"}
+    return {"message": "Все товары успешно добавлены"}
 
 
 @router.get("/edges", response_model=list[SEdgeOut])
@@ -86,7 +89,7 @@ async def get_edge_data(edge_id: int):
     edge = await EdgesDAO.find_one_or_none(id=edge_id)
 
     if not edge:
-        raise HTTPException(status_code=404, detail="РћР±СЂР°Р±РѕС‚РєР° РЅРµ РЅР°Р№РґРµРЅР°")
+        raise HTTPException(status_code=404, detail="Кромка не найдена")
 
     return edge
 
@@ -96,7 +99,7 @@ async def update_edge(edge_id: int, data: SEdgeUpdate):
     edge = await EdgesDAO.find_one_or_none(id=edge_id)
 
     if not edge:
-        raise HTTPException(status_code=404, detail="РћР±СЂР°Р±РѕС‚РєР° РЅРµ РЅР°Р№РґРµРЅР°")
+        raise HTTPException(status_code=404, detail="Кромка не найдена")
 
     return await EdgesDAO.update({"id": edge_id}, **data.model_dump())
 
@@ -106,7 +109,7 @@ async def delete_edge(edge_id: int):
     edge = await EdgesDAO.find_one_or_none(id=edge_id)
 
     if not edge:
-        raise HTTPException(status_code=404, detail="РћР±СЂР°Р±РѕС‚РєР° РЅРµ РЅР°Р№РґРµРЅР°")
+        raise HTTPException(status_code=404, detail="Кромка не найдена")
 
     await EdgesDAO.delete_by(id=edge_id)
 
@@ -126,7 +129,7 @@ async def get_facet_data(facet_id: int):
     facet = await FacetsDAO.find_one_or_none(id=facet_id)
 
     if not facet:
-        raise HTTPException(status_code=404, detail="Р¤Р°С†РµС‚ РЅРµ РЅР°Р№РґРµРЅ")
+        raise HTTPException(status_code=404, detail="Фацет не найден")
 
     return facet
 
@@ -136,7 +139,7 @@ async def update_facet(facet_id: int, data: SFacetUpdate):
     facet = await FacetsDAO.find_one_or_none(id=facet_id)
 
     if not facet:
-        raise HTTPException(status_code=404, detail="Р¤Р°С†РµС‚ РЅРµ РЅР°Р№РґРµРЅ")
+        raise HTTPException(status_code=404, detail="Фацет не найден")
 
     return await FacetsDAO.update({"id": facet_id}, **data.model_dump())
 
@@ -146,7 +149,7 @@ async def delete_facet(facet_id: int):
     facet = await FacetsDAO.find_one_or_none(id=facet_id)
 
     if not facet:
-        raise HTTPException(status_code=404, detail="Р¤Р°С†РµС‚ РЅРµ РЅР°Р№РґРµРЅ")
+        raise HTTPException(status_code=404, detail="Фацет не найден")
 
     await FacetsDAO.delete_by(id=facet_id)
 
@@ -166,7 +169,7 @@ async def get_tempering_data(tempering_id: int):
     tempering = await TemperingDAO.find_one_or_none(id=tempering_id)
 
     if not tempering:
-        raise HTTPException(status_code=404, detail="Р—Р°РєР°Р»РєР° РЅРµ РЅР°Р№РґРµРЅР°")
+        raise HTTPException(status_code=404, detail="Закалка не найдена")
 
     return tempering
 
@@ -176,7 +179,7 @@ async def update_tempering(tempering_id: int, data: STemperingUpdate):
     tempering = await TemperingDAO.find_one_or_none(id=tempering_id)
 
     if not tempering:
-        raise HTTPException(status_code=404, detail="Р—Р°РєР°Р»РєР° РЅРµ РЅР°Р№РґРµРЅР°")
+        raise HTTPException(status_code=404, detail="Закалка не найдена")
 
     return await TemperingDAO.update({"id": tempering_id}, **data.model_dump())
 
@@ -186,6 +189,6 @@ async def delete_tempering(tempering_id: int):
     tempering = await TemperingDAO.find_one_or_none(id=tempering_id)
 
     if not tempering:
-        raise HTTPException(status_code=404, detail="Р—Р°РєР°Р»РєР° РЅРµ РЅР°Р№РґРµРЅР°")
+        raise HTTPException(status_code=404, detail="Закалка не найдена")
 
     await TemperingDAO.delete_by(id=tempering_id)

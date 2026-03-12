@@ -8,6 +8,7 @@ import {
   Category,
   DeliveryQuote,
   DeliverySuggestion,
+  PaymentOrder,
   Product,
   ProductConfig
 } from './models';
@@ -27,13 +28,16 @@ export class ShopStore {
   readonly catalogLoading = signal(false);
   readonly configLoading = signal(false);
   readonly cartLoading = signal(false);
+  readonly checkoutLoading = signal(false);
   readonly deliveryLoading = signal(false);
   readonly deliverySuggestionsLoading = signal(false);
   readonly catalogError = signal('');
   readonly cartError = signal('');
+  readonly checkoutError = signal('');
   readonly deliveryError = signal('');
   readonly actionMessage = signal('');
   readonly cart = signal<CartResponse | null>(null);
+  readonly latestPaymentOrder = signal<PaymentOrder | null>(null);
   readonly deliveryQuote = signal<DeliveryQuote | null>(null);
   readonly deliverySuggestions = signal<DeliverySuggestion[]>([]);
   readonly selectedDeliverySuggestion = signal<DeliverySuggestion | null>(null);
@@ -190,6 +194,7 @@ export class ShopStore {
         total_price: '0',
         can_order: true
       });
+      this.latestPaymentOrder.set(null);
       this.deliveryQuote.set(null);
       this.deliveryError.set('');
       this.cartError.set(getApiErrorMessage(error));
@@ -249,10 +254,86 @@ export class ShopStore {
         total_price: '0',
         can_order: true
       });
+      this.latestPaymentOrder.set(null);
       this.clearDeliveryQuote();
       this.actionMessage.set('Корзина очищена.');
     } catch (error) {
       this.actionMessage.set(getApiErrorMessage(error));
+    }
+  }
+
+  async startYooKassaCheckout(): Promise<PaymentOrder | null> {
+    const address = this.deliveryAddress().trim();
+
+    if (!address) {
+      this.checkoutError.set('Укажите адрес доставки перед оплатой.');
+      return null;
+    }
+
+    if ((this.cart()?.items.length ?? 0) === 0) {
+      this.checkoutError.set('Сначала добавьте товары в корзину.');
+      return null;
+    }
+
+    this.checkoutLoading.set(true);
+    this.checkoutError.set('');
+
+    try {
+      const selectedSuggestion = this.selectedDeliverySuggestion();
+      const payload: {
+        address: string;
+        normalized_address?: string;
+        lat?: number;
+        lon?: number;
+      } = {
+        address
+      };
+
+      if (selectedSuggestion?.full_address === address) {
+        payload.normalized_address = selectedSuggestion.full_address;
+        payload.lat = selectedSuggestion.lat;
+        payload.lon = selectedSuggestion.lon;
+      }
+
+      const paymentOrder = await firstValueFrom(
+        this.http.post<PaymentOrder>('/payments/yookassa/create', payload)
+      );
+      this.latestPaymentOrder.set(paymentOrder);
+      this.actionMessage.set(paymentOrder.message);
+      return paymentOrder;
+    } catch (error) {
+      this.checkoutError.set(getApiErrorMessage(error));
+      return null;
+    } finally {
+      this.checkoutLoading.set(false);
+    }
+  }
+
+  async loadPaymentOrder(orderId: number): Promise<PaymentOrder | null> {
+    if (!Number.isFinite(orderId) || orderId <= 0) {
+      return null;
+    }
+
+    this.checkoutLoading.set(true);
+    this.checkoutError.set('');
+
+    try {
+      const paymentOrder = await firstValueFrom(
+        this.http.get<PaymentOrder>(`/payments/orders/${orderId}`)
+      );
+      this.latestPaymentOrder.set(paymentOrder);
+      this.actionMessage.set(paymentOrder.message);
+
+      if (paymentOrder.status === 'paid') {
+        await this.loadCart();
+      }
+
+      return paymentOrder;
+    } catch (error) {
+      this.checkoutError.set(getApiErrorMessage(error));
+      return null;
+    } finally {
+      this.checkoutLoading.set(false);
     }
   }
 
@@ -356,6 +437,8 @@ export class ShopStore {
   clearLocalCart(): void {
     this.cart.set(null);
     this.cartError.set('');
+    this.checkoutError.set('');
+    this.latestPaymentOrder.set(null);
     this.clearDeliveryQuote();
     this.actionMessage.set('');
   }

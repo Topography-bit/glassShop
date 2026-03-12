@@ -24,12 +24,14 @@
 
 html {
   scroll-behavior: smooth;
+  overflow-x: hidden;
 }
 
 body {
   position: relative;
   min-height: 100vh;
   margin: 0;
+  overflow-x: hidden;
   color: var(--text-strong);
   background:
     radial-gradient(circle at top left, rgba(255, 255, 255, 0.78), transparent 28%),
@@ -61,11 +63,23 @@ textarea {
   font: inherit;
 }
 
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
 button,
 input,
 select,
 textarea {
   box-sizing: border-box;
+}
+
+img,
+svg {
+  display: block;
+  max-width: 100%;
 }
 
 h1,
@@ -372,8 +386,8 @@ a {
 }
 
 .auth-card__form .field {
-  width: calc(100% - 0.9rem);
-  margin-right: 0.9rem;
+  width: 100%;
+  margin-right: 0;
   padding: 0 1.1rem;
 }
 
@@ -430,5 +444,49 @@ a {
 
   .auth-panel__title {
     max-width: none;
+  }
+}
+
+@media (max-width: 640px) {
+  :root {
+    --page-width: calc(100vw - 1rem);
+  }
+
+  .glass-card {
+    border-radius: 1.3rem;
+  }
+
+  .field,
+  .select-field,
+  .floating-field__control {
+    min-height: 3.2rem;
+    border-radius: 1.1rem;
+  }
+
+  .solid-button,
+  .ghost-button {
+    width: 100%;
+    min-height: 2.95rem;
+    padding: 0 1rem;
+  }
+
+  .auth-page {
+    min-height: auto;
+    padding: 0.9rem 0 1.4rem;
+  }
+
+  .auth-layout {
+    width: var(--page-width);
+    gap: 0.85rem;
+  }
+
+  .auth-panel,
+  .auth-card {
+    padding: 1.1rem;
+  }
+
+  .auth-panel__title,
+  .auth-card__heading {
+    font-size: clamp(1.95rem, 8.5vw, 2.6rem);
   }
 }
